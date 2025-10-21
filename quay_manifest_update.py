@@ -125,7 +125,7 @@ class Remote:
             )
             if out.returncode != 0:
                 print(f"failed (could not add {platform} to manifest).")
-                return False
+                return True
 
         out = subprocess.run(
             ["podman", "manifest", "push", "--all", f"{self.mirror}:latest"],
@@ -133,7 +133,7 @@ class Remote:
         )
         if out.returncode != 0:
             print("failed (could not push manifest).")
-            return False
+            return True
 
         print("ok.")
         return True
@@ -204,7 +204,13 @@ def main() -> None:
             remote.push(platform)
 
         print(f"\nManifest for: {platforms}")
-        remote.commit(platforms)
+        if remote.commit(platforms):
+            out = subprocess.run(
+                ["podman", "manifest", "rm", f"{remote.mirror}:latest"]
+            )
+            if out.returncode != 0:
+                print("Failed to remove manifest.")
+                return
 
 
 if __name__ == "__main__":
