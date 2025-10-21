@@ -38,7 +38,7 @@ class Remote:
     def fetch(self, platform: str, mirror: bool = False) -> str:
         loc = self.upstream
         if mirror:
-            loc = self.mirror
+            loc = f"{self.mirror}:{platform.split('/')[1]}"
 
         print("Fetching... ", end="")
 
@@ -102,6 +102,13 @@ class Remote:
 
     def commit(self, platforms: list[str]) -> bool:
         print("Updating manifest... ", end="")
+
+        # TODO: check if necessary
+        # Remove associated image
+        out = subprocess.run(
+            ["podman", "image", "rm", f"{self.mirror}:latest"],
+            capture_output=True,
+        )
 
         out = subprocess.run(
             ["podman", "manifest", "create", f"{self.mirror}:latest"],
