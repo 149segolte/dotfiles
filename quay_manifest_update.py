@@ -67,19 +67,19 @@ class Remote:
             capture_output=True,
         )
         if out.returncode != 0:
-            print("failed.")
+            print("failed (could not tag image).")
             return
 
         lines = out.stdout.decode().splitlines()
         if len(lines) > 0:
-            print("failed.")
+            print("failed (tagging invalid output).")
 
         out = subprocess.run(
             ["podman", "image", "push", "--tls-verify=false", loc],
             capture_output=True,
         )
         if out.returncode != 0:
-            print("failed.")
+            print("failed (could not push image).")
             return
 
         lines = out.stderr.decode().splitlines()
