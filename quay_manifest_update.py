@@ -203,7 +203,7 @@ def main() -> None:
 
             remote.push(platform)
 
-        print(f"\nManifest for: {platforms}", end="")
+        print(f"\nManifest for: {platforms}")
         remote.commit(platforms)
 
 
