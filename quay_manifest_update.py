@@ -213,7 +213,7 @@ def main() -> None:
         print(f"\nManifest for: {platforms}")
         if remote.commit(args.tag, platforms):
             out = subprocess.run(
-                ["podman", "manifest", "rm", f"{remote.mirror}:latest"]
+                ["podman", "manifest", "rm", f"{remote.mirror}:{args.tag}"],
             )
             if out.returncode != 0:
                 print("Failed to remove manifest.")
