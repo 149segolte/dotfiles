@@ -100,18 +100,18 @@ class Remote:
         print("ok.")
         return True
 
-    def commit(self, platforms: list[str]) -> bool:
+    def commit(self, tag: str, platforms: list[str]) -> bool:
         print("Updating manifest... ", end="")
 
         # TODO: check if necessary
         # Remove associated image
         out = subprocess.run(
-            ["podman", "image", "rm", f"{self.mirror}:latest"],
+            ["podman", "image", "rm", f"{self.mirror}:{tag}"],
             capture_output=True,
         )
 
         out = subprocess.run(
-            ["podman", "manifest", "create", f"{self.mirror}:latest"],
+            ["podman", "manifest", "create", f"{self.mirror}:{tag}"],
             capture_output=True,
         )
         if out.returncode != 0:
@@ -125,7 +125,7 @@ class Remote:
                     "podman",
                     "manifest",
                     "add",
-                    f"{self.mirror}:latest",
+                    f"{self.mirror}:{tag}",
                     f"docker://{loc}",
                 ],
                 capture_output=True,
@@ -135,7 +135,7 @@ class Remote:
                 return True
 
         out = subprocess.run(
-            ["podman", "manifest", "push", "--all", f"{self.mirror}:latest"],
+            ["podman", "manifest", "push", "--all", f"{self.mirror}:{tag}"],
             capture_output=True,
         )
         if out.returncode != 0:
@@ -211,7 +211,7 @@ def main() -> None:
             remote.push(platform)
 
         print(f"\nManifest for: {platforms}")
-        if remote.commit(platforms):
+        if remote.commit(args.tag, platforms):
             out = subprocess.run(
                 ["podman", "manifest", "rm", f"{remote.mirror}:latest"]
             )
