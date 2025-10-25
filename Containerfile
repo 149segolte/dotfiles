@@ -1,11 +1,18 @@
 FROM quay.io/149segolte/fedora
-# Install common tools
+# Install required packages
 RUN dnf install -y \
     procps-ng \
-    fish git neovim && \
+    fish git \
+    bat zoxide ripgrep fzf fd-find && \
     dnf clean all
+# Fetch eza (not in repos)
+RUN curl -sL https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz | tar -xzvf - -C /usr/local/bin/ && \
+    chmod +x /usr/local/bin/eza
 # Copy configuration files
 COPY files/ /tmp/
 # Configure shell
 RUN cat /tmp/bash_to_fish.sh >> /root/.bashrc
-RUN cp /tmp/config.fish /root/.config/fish/
+RUN fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher"
+RUN fish -c "fisher install IlanCosman/tide@v6" && \
+    fish -c "fisher install PatrickF1/fzf.fish"
+RUN mkdir -p /root/.config/fish/ && cp /tmp/config.fish /root/.config/fish/
