@@ -16,3 +16,4 @@ RUN fish -c "curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main
 RUN fish -c "fisher install IlanCosman/tide@v6" && \
     fish -c "fisher install PatrickF1/fzf.fish"
 RUN mkdir -p /root/.config/fish/ && cp /tmp/config.fish /root/.config/fish/
+RUN fish -c "tide configure --auto --style=Lean --prompt_colors='True color' --show_time='24-hour format' --lean_prompt_height='One line' --prompt_spacing=Compact --icons='Few icons' --transient=No"

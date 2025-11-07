@@ -14,7 +14,6 @@ set -g fish_greeting
 set -g tide_character_color $fish_color_operator
 set -g tide_character_color_failure $fish_color_error
 set -g tide_pwd_color_anchors $fish_color_command
-tide configure --auto --style=Lean --prompt_colors='True color' --show_time='24-hour format' --lean_prompt_height='One line' --prompt_spacing=Compact --icons='Few icons' --transient=No
 
 # Zoxide
 zoxide init fish | source
