@@ -1,0 +1,3 @@
+{{- if not (eq .chezmoi.hostname "novasking" "yigirus") }}
+.ssh/config_hosts
+{{- end }}
