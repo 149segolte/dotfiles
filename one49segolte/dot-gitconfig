@@ -1,0 +1,14 @@
+[init]
+    defaultBranch = main
+[gpg]
+    format = ssh
+[gpg "ssh"]
+    allowedSignersFile = /home/one49segolte/.ssh/git_allowed_signers
+[commit]
+    gpgsign = true
+[tag]
+    gpgSign = true
+[user]
+    name = 149segolte
+    email = 37300847+149segolte@users.noreply.github.com
+    signingkey = /home/one49segolte/.ssh/id_ed25519_sk.pub

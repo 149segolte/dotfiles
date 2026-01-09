@@ -1,0 +1,10 @@
+Include config
+
+Host yigirus.arpa
+  HostName yigirus.arpa
+
+Host novasking.arpa
+  HostName novasking.arpa
+
+Host rpi.arpa
+  HostName rpi.arpa
