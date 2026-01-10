@@ -1,0 +1,3 @@
+{{- range .ssh_keys -}}
+  {{- cat $.github.email "namespaces=\"git\"" . }}
+{{ end -}}

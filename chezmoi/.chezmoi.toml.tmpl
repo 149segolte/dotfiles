@@ -1,0 +1,15 @@
+{{- $ssh_files := glob (print .chezmoi.sourceDir "/dot_ssh/*") -}}
+{{- $ssh_keys := list -}}
+
+{{- range $ssh_files -}}
+  {{- if hasSuffix "pub" . -}}
+    {{- $ssh_keys = append $ssh_keys (include . | trim) -}}
+  {{- end -}}
+{{- end -}}
+
+[data]
+ssh_keys = {{ $ssh_keys | compact | toToml }}
+
+    [data.github]
+    user = "149segolte"
+    email = "37300847+149segolte@users.noreply.github.com"
