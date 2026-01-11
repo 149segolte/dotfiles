@@ -1,0 +1,16 @@
+[packages]
+    [packages.darwin]
+    brews = []
+    casks = []
+
+    [packages.linux]
+    flatpaks = ["flatseal"]
+
+        [packages.linux.fedora]
+            package_manager = "dnf"
+
+            [packages.linux.fedora.cli]
+                common = ["fish", "git", "btop", "bat", "zoxide", "ripgrep", "fzf", "fd-find"]
+
+            [packages.linux.fedora.external]
+                common = []
