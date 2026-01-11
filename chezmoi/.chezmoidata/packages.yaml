@@ -1,0 +1,45 @@
+packages:
+  darwin:
+    brews: []
+    casks: []
+  linux:
+    flatpaks:
+      - flatseal
+    fedora:
+      package_manager: dnf
+      exclude_flag: "--exclude="
+      update_check: "sudo dnf check-update -q | wc -l"
+      cli:
+        common:
+          - fish
+          - git
+          - neovim
+          - btop
+          - bat
+          - zoxide
+          - ripgrep
+          - fzf
+          - fd-find
+          - "-nodejs"
+      # Managed by .chezmoiexternals instead of scripts
+      external:
+        common:
+          ".local/bin/eza":
+            type: archive-file
+            url:
+              kind: github_latest_release_asset_url
+              args:
+                - 'eza-community/eza'
+                - 'eza_x86_64-unknown-linux-gnu.tar.gz'
+            executable: true
+            path: ./eza
+          ".config/fish/completions/eza.fish":
+            type: archive-file
+            url:
+              kind: github_latest_release_asset_url
+              args:
+                - 'eza-community/eza'
+                - 'completions-*.tar.gz'
+            executable: false
+            stripComponents: 3
+            path: eza.fish

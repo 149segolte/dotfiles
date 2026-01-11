@@ -7,10 +7,9 @@
   {{- end -}}
 {{- end -}}
 
-[data]
-gui = {{ (eq .chezmoi.hostname "novasking" "yigirus") | toToml }}
-ssh_keys = {{ $ssh_keys | compact | toToml }}
-
-    [data.github]
-    user = "149segolte"
-    email = "37300847+149segolte@users.noreply.github.com"
+data:
+  gui: {{ (eq .chezmoi.hostname "novasking" "yigirus") | toYaml }}
+  {{- (dict "ssh_keys" ($ssh_keys | compact)) | toYaml | indent 2 -}}
+  github:
+    user: "149segolte"
+    email: "37300847+149segolte@users.noreply.github.com"
