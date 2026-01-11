@@ -8,9 +8,10 @@
 
         [packages.linux.fedora]
             package_manager = "dnf"
+            exclude_flag = "--exclude="
 
             [packages.linux.fedora.cli]
-                common = ["fish", "git", "btop", "bat", "zoxide", "ripgrep", "fzf", "fd-find"]
+                common = ["fish", "git", "neovim", "btop", "bat", "zoxide", "ripgrep", "fzf", "fd-find", "-nodejs"]
 
             [packages.linux.fedora.external]
                 common = []

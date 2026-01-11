@@ -15,7 +15,7 @@ EOF
   {{- if .gui -}}
     {{- $flatpaks := .packages.linux.flatpaks | compact | join " " | trim -}}
     {{- if gt (len $flatpaks) 0 -}}
-      flatpak install {{ $flatpaks }}{{ "\n" }}
+      flatpak install {{ $flatpaks }} {{ "\n" }}
     {{- end -}}
   {{- end -}}
 
@@ -27,9 +27,24 @@ EOF
       {{- $clis = concat $clis (get $sys.cli .chezmoi.hostname) -}}
     {{- end -}}
 
-    {{- $clis = $clis | compact | join " " | trim -}}
-    {{- if gt (len $clis) 0 -}}
-      sudo {{ $sys.package_manager }} install {{ $clis }}{{ "\n" }}
+    {{- $include := list -}}
+    {{- $exclude := list -}}
+    {{- range ($clis | compact) -}}
+      {{- if hasPrefix "-" . -}}
+        {{- $exclude = append $exclude (. | trimPrefix "-") -}}
+      {{- else -}}
+        {{- $include = append $include . -}}
+      {{- end -}}
+    {{- end -}}
+
+    {{- $include = $include | compact | join " " | trim -}}
+    {{- $exclude = $exclude | compact | join "," | trim -}}
+    {{- if gt (len $exclude) 0 -}}
+      {{- $exclude = nospace (cat $sys.exclude_flag $exclude) -}}
+    {{- end -}}
+
+    {{- if gt (len $include) 0 -}}
+      sudo {{ $sys.package_manager }} install {{ $include }} {{ $exclude }} {{ "\n" }}
     {{- end -}}
   {{- end -}}
 
