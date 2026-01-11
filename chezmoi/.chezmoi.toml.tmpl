@@ -8,6 +8,7 @@
 {{- end -}}
 
 [data]
+gui = {{ (eq .chezmoi.hostname "novasking" "yigirus") | toToml }}
 ssh_keys = {{ $ssh_keys | compact | toToml }}
 
     [data.github]
