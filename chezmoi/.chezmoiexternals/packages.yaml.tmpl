@@ -1,0 +1,28 @@
+{{- if eq .chezmoi.os "linux" -}}
+
+  {{- if gt (len (get .packages.linux .chezmoi.osRelease.id)) 0 -}}
+    {{- $sys := get .packages.linux .chezmoi.osRelease.id -}}
+
+    {{- $externals := $sys.external.common -}}
+    {{- if gt (len (get $sys.external .chezmoi.hostname)) 0 -}}
+      {{- $externals = merge $externals (get $sys.external .chezmoi.hostname) -}}
+    {{- end -}}
+
+    {{- range $key, $original := $externals -}}
+      {{- $mapped := dict -}}
+
+      {{- range $k, $v := $original -}}
+        {{- if and (eq $k "url") (kindIs "map" $v) -}}
+          {{- if eq (get $v "kind") "github_latest_release_asset_url" -}}
+            {{- $v = gitHubLatestReleaseAssetURL (index $v.args 0) (index $v.args 1) -}}
+          {{- end -}}
+        {{- end -}}
+
+        {{- $mapped = set $mapped $k $v -}}
+      {{- end -}}
+
+      {{- (dict $key $mapped) | toYaml -}}
+    {{- end -}}
+  {{- end -}}
+
+{{- end -}}
