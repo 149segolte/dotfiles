@@ -48,9 +48,7 @@ EOF
     {{- end -}}
 
     {{- $updates := (output "bash" "-c" $sys.update_check) | trim | atoi -}}
-    {{- if gt $updates 0 -}}
-      echo {{ output "date" "+'%a %b %d %Y'" | trim }}: {{ $updates }} updates due
-    {{- end -}}
+    echo {{ output "date" "+'%a %b %d %Y'" | trim }}: {{ $updates }} updates due
   {{- end -}}
 
 {{- end -}}
