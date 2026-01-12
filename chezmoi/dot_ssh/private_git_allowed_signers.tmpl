@@ -1,3 +1,7 @@
+{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+
 {{- range .ssh_keys -}}
-  {{- cat $.github.email "namespaces=\"git\"" . }}
-{{ end -}}
+  {{ cat $.github.email "namespaces=\"git\"" . }} {{- "\n" }}
+{{- end -}}
+
+{{- end -}}

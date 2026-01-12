@@ -1,27 +1,17 @@
+{{- $ssh_files := glob (print .chezmoi.sourceDir "/dot_ssh/*") -}}
+{{- $ssh_keys := list -}}
+
+{{- range $ssh_files -}}
+  {{- if hasSuffix "pub" . -}}
+    {{- $ssh_keys = append $ssh_keys (include . | trim) -}}
+  {{- end -}}
+{{- end -}}
+
+{{- (dict "ssh_keys" ($ssh_keys | compact)) | toYaml -}}
+gui: {{ (eq .chezmoi.hostname "novasking" "yigirus") | toYaml | trim }}
 packages:
-  darwin:
-    brews: []
-    casks: []
   linux:
-    flatpaks:
-      - flatseal
     fedora:
-      package_manager: dnf
-      exclude_flag: "--exclude="
-      update_check: "sudo dnf check-update -q | wc -l"
-      cli:
-        common:
-          - fish
-          - git
-          - neovim
-          - btop
-          - bat
-          - zoxide
-          - ripgrep
-          - fzf
-          - fd-find
-          - "-nodejs"
-      # Managed by .chezmoiexternals instead of scripts
       external:
         common:
           ".local/bin/eza":

@@ -1,3 +1,7 @@
-{{- if not .gui }}
-.ssh/config_hosts
-{{- end }}
+{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+
+{{- if not .gui -}}
+  .ssh/config_hosts{{ "\n" }}
+{{- end -}}
+
+{{- end -}}

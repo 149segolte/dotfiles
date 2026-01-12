@@ -1,3 +1,5 @@
+{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+
 {{- if eq .chezmoi.os "linux" -}}
 
   {{- if gt (len (get .packages.linux .chezmoi.osRelease.id)) 0 -}}
@@ -24,5 +26,7 @@
       {{- (dict $key $mapped) | toYaml -}}
     {{- end -}}
   {{- end -}}
+
+{{- end -}}
 
 {{- end -}}

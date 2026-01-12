@@ -1,0 +1,26 @@
+github:
+  user: "149segolte"
+  email: "37300847+149segolte@users.noreply.github.com"
+packages:
+  darwin:
+    brews: []
+    casks: []
+  linux:
+    flatpaks:
+      - flatseal
+    fedora:
+      package_manager: dnf
+      exclude_flag: "--exclude="
+      update_check: "sudo dnf check-update -q | wc -l"
+      cli:
+        common:
+          - fish
+          - git
+          - neovim
+          - btop
+          - bat
+          - zoxide
+          - ripgrep
+          - fzf
+          - fd-find
+          - "-nodejs"

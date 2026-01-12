@@ -1,3 +1,5 @@
+{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+
 [init]
     defaultBranch = main
 [gpg]
@@ -12,3 +14,5 @@
     name = 149segolte
     email = 37300847+149segolte@users.noreply.github.com
     signingkey = {{ .chezmoi.homeDir }}/.ssh/id_ed25519_sk.pub
+
+{{- "\n" }}{{- end -}}

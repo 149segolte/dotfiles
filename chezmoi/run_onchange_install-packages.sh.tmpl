@@ -1,12 +1,15 @@
-#!/bin/bash
-{{ if eq .chezmoi.os "darwin" -}}
+{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+
+#!/usr/bin/env bash {{- "\n" }}
+
+{{- if eq .chezmoi.os "darwin" -}}
 
 brew bundle --file=/dev/stdin <<EOF
   {{- range .packages.darwin.brews -}}
-brew {{ . | quote }}
+    brew {{ . | quote }} {{- "\n" }}
   {{- end -}}
   {{- range .packages.darwin.casks -}}
-cask {{ . | quote }}
+    cask {{ . | quote }} {{- "\n" }}
   {{- end -}}
 EOF
 
@@ -15,7 +18,7 @@ EOF
   {{- if .gui -}}
     {{- $flatpaks := .packages.linux.flatpaks | compact | join " " | trim -}}
     {{- if gt (len $flatpaks) 0 -}}
-      flatpak install {{ $flatpaks }} {{ "\n" }}
+      flatpak install {{ $flatpaks }} {{- "\n" }}
     {{- end -}}
   {{- end -}}
 
@@ -44,11 +47,13 @@ EOF
     {{- end -}}
 
     {{- if gt (len $include) 0 -}}
-      sudo {{ $sys.package_manager }} install {{ $include }} {{ $exclude }} {{ "\n" }}
+      sudo {{ $sys.package_manager }} install {{ $include }} {{ $exclude }} {{- "\n" }}
     {{- end -}}
 
     {{- $updates := (output "bash" "-c" $sys.update_check) | trim | atoi -}}
-    echo {{ output "date" "+'%a %b %d %Y'" | trim }}: {{ $updates }} updates due
+    echo {{ output "date" "+'%a %b %d %Y'" | trim }}: {{ $updates }} updates due {{- "\n" }}
   {{- end -}}
+
+{{- end -}}
 
 {{- end -}}

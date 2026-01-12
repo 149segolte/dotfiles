@@ -1,1 +1,7 @@
-{{ .ssh_keys | join "\n" }}
+{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+
+{{- range .ssh_keys -}}
+  {{ . }} {{- "\n" }}
+{{- end -}}
+
+{{- end -}}
