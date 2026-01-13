@@ -13,8 +13,9 @@
 {{- end -}}
 
 {{- (dict "ssh_keys" ($ssh_keys | compact)) | toYaml -}}
-gui: {{ (eq .chezmoi.hostname "novasking" "yigirus") | toYaml | trim }}
+gui: {{ (eq .chezmoi.hostname "novasking" "yigirus") }}
 arch: {{ $arch }}
+system_overrides_dir: {{ joinPath .chezmoi.sourceDir ".." "system" }}
 packages:
   linux:
     fedora:
