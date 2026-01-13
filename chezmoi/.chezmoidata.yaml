@@ -11,7 +11,7 @@ packages:
     fedora:
       package_manager: dnf
       exclude_flag: "--exclude="
-      update_check: "sudo dnf check-update -q | wc -l"
+      update_check: "dnf check-update -q | wc -l"
       cli:
         common:
           - fish

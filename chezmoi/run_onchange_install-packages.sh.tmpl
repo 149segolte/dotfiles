@@ -50,8 +50,8 @@ EOF
       sudo {{ $sys.package_manager }} install {{ $include }} {{ $exclude }} {{- "\n" }}
     {{- end -}}
 
-    {{- $updates := (output "bash" "-c" $sys.update_check) | trim | atoi -}}
-    echo {{ output "date" "+'%a %b %d %Y'" | trim }}: {{ $updates }} updates due {{- "\n" }}
+    updates=$(eval {{ $sys.update_check | quote }}) {{- "\n" -}}
+    echo {{ output "date" "+'%a %b %d %Y'" | trim }}: $updates updates due {{- "\n" }}
   {{- end -}}
 
 {{- end -}}
