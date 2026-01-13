@@ -1,3 +1,8 @@
+{{- $arch := .chezmoi.arch -}}
+{{- if and (eq $arch "arm64") (eq .chezmoi.os "linux") -}}
+  {{- $arch = "aarch64" -}}
+{{- end -}}
+
 {{- $ssh_files := glob (print .chezmoi.sourceDir "/dot_ssh/*") -}}
 {{- $ssh_keys := list -}}
 
@@ -9,6 +14,7 @@
 
 {{- (dict "ssh_keys" ($ssh_keys | compact)) | toYaml -}}
 gui: {{ (eq .chezmoi.hostname "novasking" "yigirus") | toYaml | trim }}
+arch: {{ $arch }}
 packages:
   linux:
     fedora:
@@ -16,20 +22,12 @@ packages:
         common:
           ".local/bin/eza":
             type: archive-file
-            url:
-              kind: github_latest_release_asset_url
-              args:
-                - 'eza-community/eza'
-                - 'eza_x86_64-unknown-linux-gnu.tar.gz'
+            url: {{ gitHubLatestReleaseAssetURL "eza-community/eza" ((cat "eza_" $arch "-unknown-linux-gnu.tar.gz") | nospace) | quote }}
             executable: true
             path: ./eza
           ".config/fish/completions/eza.fish":
             type: archive-file
-            url:
-              kind: github_latest_release_asset_url
-              args:
-                - 'eza-community/eza'
-                - 'completions-*.tar.gz'
+            url: {{ gitHubLatestReleaseAssetURL "eza-community/eza" "completions-*.tar.gz" | quote }}
             executable: false
             stripComponents: 3
             path: eza.fish
