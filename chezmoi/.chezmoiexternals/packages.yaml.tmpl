@@ -10,21 +10,7 @@
       {{- $externals = merge $externals (get $sys.external .chezmoi.hostname) -}}
     {{- end -}}
 
-    {{- range $key, $original := $externals -}}
-      {{- $mapped := dict -}}
-
-      {{- range $k, $v := $original -}}
-        {{- if and (eq $k "url") (kindIs "map" $v) -}}
-          {{- if eq (get $v "kind") "github_latest_release_asset_url" -}}
-            {{- $v = gitHubLatestReleaseAssetURL (index $v.args 0) (index $v.args 1) -}}
-          {{- end -}}
-        {{- end -}}
-
-        {{- $mapped = set $mapped $k $v -}}
-      {{- end -}}
-
-      {{- (dict $key $mapped) | toYaml -}}
-    {{- end -}}
+    {{- $externals | toYaml -}}
   {{- end -}}
 
 {{- end -}}
