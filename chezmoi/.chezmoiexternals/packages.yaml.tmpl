@@ -1,4 +1,5 @@
 {{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+{{- $ := . -}}
 
 {{- if eq .chezmoi.os "linux" -}}
 
