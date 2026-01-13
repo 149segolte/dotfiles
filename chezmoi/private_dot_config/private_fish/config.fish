@@ -3,6 +3,7 @@ fisher_check "jorgebucaran/fisher" "patrickf1/fzf.fish" "ilancosman/tide@v6"
 
 # Global config
 set -g fish_greeting
+set -g EDITOR nvim
 
 if status is-interactive
     # Commands to run in interactive sessions can go here

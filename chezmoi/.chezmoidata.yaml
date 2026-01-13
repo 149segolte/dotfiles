@@ -17,10 +17,12 @@ packages:
           - fish
           - git
           - neovim
+          - "-nodejs"
           - btop
           - bat
           - zoxide
           - ripgrep
           - fzf
           - fd-find
-          - "-nodejs"
+          - du-dust
+          - tmux
