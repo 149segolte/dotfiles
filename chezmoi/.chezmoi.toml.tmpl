@@ -1,3 +1,0 @@
-[hooks.read-source-state.pre]
-    command = {{ (joinPath .chezmoi.sourceDir "meta" "transform.py") | quote }}
-    args = {{ .chezmoi.sourceDir | quote }}
