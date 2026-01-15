@@ -4,5 +4,6 @@
 {{- if not .gui -}}
   .ssh/config_hosts{{ "\n" }}
 {{- end -}}
+meta/
 
 {{- end -}}
