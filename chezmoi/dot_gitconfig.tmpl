@@ -1,4 +1,4 @@
-{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+{{- with ((includeTemplate "coalesce_data.yaml.tmpl" .) | fromYaml) -}}
 {{- $ := . -}}
 
 [init]
@@ -6,14 +6,14 @@
 [gpg]
     format = ssh
 [gpg "ssh"]
-    allowedSignersFile = {{ .chezmoi.homeDir }}/.ssh/git_allowed_signers
+    allowedSignersFile = {{ joinPath .chezmoi.homeDir ".ssh" "git_allowed_signers" }}
 [commit]
     gpgsign = true
 [tag]
     gpgSign = true
 [user]
-    name = 149segolte
-    email = 37300847+149segolte@users.noreply.github.com
-    signingkey = {{ .chezmoi.homeDir }}/.ssh/id_ed25519_sk.pub
+    name = {{ .data.metadata.github.user }}
+    email = {{ .data.metadata.github.email }}
+    signingkey = {{ joinPath .chezmoi.homeDir ".ssh" "id_ed25519_sk.pub" }} {{- "\n" -}}
 
-{{- "\n" }}{{- end -}}
+{{- end -}}

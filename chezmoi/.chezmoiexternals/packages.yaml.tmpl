@@ -1,19 +1,17 @@
-{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+{{- with ((includeTemplate "coalesce_data.yaml.tmpl" .) | fromYaml) -}}
 {{- $ := . -}}
 
-{{- if eq .chezmoi.os "linux" -}}
+{{- $result := dict -}}
+{{- range $key, $val := .data.externals -}}
+  {{- $url := $val.url -}}
 
-  {{- if gt (len (get .packages.linux .chezmoi.osRelease.id)) 0 -}}
-    {{- $sys := get .packages.linux .chezmoi.osRelease.id -}}
-
-    {{- $externals := $sys.external.common -}}
-    {{- if gt (len (get $sys.external .chezmoi.hostname)) 0 -}}
-      {{- $externals = merge $externals (get $sys.external .chezmoi.hostname) -}}
-    {{- end -}}
-
-    {{- $externals | toYaml -}}
+  {{- if kindIs "map" $val.url -}}
+    {{- $url = get $val.url $.chezmoi.arch -}}
   {{- end -}}
 
+  {{- $_ := set $result $key (mergeOverwrite $val (dict "url" $url)) -}}
 {{- end -}}
+
+{{- $result | toYaml -}}
 
 {{- end -}}

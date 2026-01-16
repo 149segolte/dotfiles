@@ -1,59 +1,55 @@
-{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+{{- with ((includeTemplate "coalesce_data.yaml.tmpl" .) | fromYaml) -}}
 {{- $ := . -}}
 
-#!/usr/bin/env bash {{- "\n" }}
+#!/usr/bin/env bash {{- "\n" -}}
 
 {{- if eq .chezmoi.os "darwin" -}}
 
 brew bundle --file=/dev/stdin <<EOF
-  {{- range .packages.darwin.brews -}}
-    brew {{ . | quote }} {{- "\n" }}
+  {{- range .data.packages.brews -}}
+    brew {{ . | quote }} {{- "\n" -}}
   {{- end -}}
-  {{- range .packages.darwin.casks -}}
-    cask {{ . | quote }} {{- "\n" }}
+  {{- if .data.metadata.gui -}}
+    {{- range .data.packages.casks -}}
+      cask {{ . | quote }} {{- "\n" -}}
+    {{- end -}}
   {{- end -}}
 EOF
 
 {{- else if eq .chezmoi.os "linux" -}}
 
-  {{- if .gui -}}
-    {{- $flatpaks := .packages.linux.flatpaks | compact | join " " | trim -}}
+  {{- if .data.metadata.gui -}}
+    {{- $flatpaks := .data.packages.flatpaks | compact | join " " | trim -}}
     {{- if gt (len $flatpaks) 0 -}}
-      flatpak install {{ $flatpaks }} {{- "\n" }}
+      flatpak install {{ $flatpaks }} {{- "\n" -}}
     {{- end -}}
   {{- end -}}
 
-  {{- if gt (len (get .packages.linux .chezmoi.osRelease.id)) 0 -}}
-    {{- $sys := get .packages.linux .chezmoi.osRelease.id -}}
+  {{- $clis := .data.packages.cli | compact -}}
 
-    {{- $clis := $sys.cli.common -}}
-    {{- if gt (len (get $sys.cli .chezmoi.hostname)) 0 -}}
-      {{- $clis = concat $clis (get $sys.cli .chezmoi.hostname) -}}
+  {{- $include := list -}}
+  {{- $exclude := list -}}
+  {{- range $clis -}}
+    {{- if hasPrefix "-" . -}}
+      {{- $exclude = append $exclude (. | trimPrefix "-") -}}
+    {{- else -}}
+      {{- $include = append $include . -}}
     {{- end -}}
-
-    {{- $include := list -}}
-    {{- $exclude := list -}}
-    {{- range ($clis | compact) -}}
-      {{- if hasPrefix "-" . -}}
-        {{- $exclude = append $exclude (. | trimPrefix "-") -}}
-      {{- else -}}
-        {{- $include = append $include . -}}
-      {{- end -}}
-    {{- end -}}
-
-    {{- $include = $include | compact | join " " | trim -}}
-    {{- $exclude = $exclude | compact | join "," | trim -}}
-    {{- if gt (len $exclude) 0 -}}
-      {{- $exclude = nospace (cat $sys.exclude_flag $exclude) -}}
-    {{- end -}}
-
-    {{- if gt (len $include) 0 -}}
-      sudo {{ $sys.package_manager }} install {{ $include }} {{ $exclude }} {{- "\n" }}
-    {{- end -}}
-
-    updates=$(eval {{ $sys.update_check | quote }}) {{- "\n" -}}
-    echo {{ output "date" "+'%a %b %d %Y'" | trim }}: $updates updates due {{- "\n" }}
   {{- end -}}
+
+  {{- $include = $include | compact | join " " | trim -}}
+  {{- $exclude = $exclude | compact | join "," | trim -}}
+
+  {{- if gt (len $exclude) 0 -}}
+    {{- $exclude = nospace (cat .data.metadata.package_management.exclude_flag $exclude) -}}
+  {{- end -}}
+
+  {{- if gt (len $include) 0 -}}
+    sudo {{ .data.metadata.package_management.command }} install {{ $include }} {{ $exclude }} {{- "\n" -}}
+  {{- end -}}
+
+  updates=$(eval {{ .data.metadata.package_management.update_count | quote }}) {{- "\n" -}}
+  echo {{ output "date" "+'%a %b %d %Y'" | trim }}: $updates updates due {{- "\n" -}}
 
 {{- end -}}
 

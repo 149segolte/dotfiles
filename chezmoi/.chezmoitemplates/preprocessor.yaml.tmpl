@@ -1,0 +1,90 @@
+{{- define "process_deep_values" -}}
+  {{- $params := . -}}
+  {{- $data := $params.data -}}
+  {{- $ctx := $params.ctx -}}
+
+  {{- range $key, $val := $data -}}
+
+    {{- if kindIs "string" $val -}}
+      {{- if hasPrefix ".chezmoi" $val -}}
+        {{- $tmp := deepCopy $ctx -}}
+        {{- $keys := $val | trimPrefix ".chezmoi" -}}
+        {{- if gt (len $keys) 0 -}}
+          {{- range ($keys | trimPrefix "." | splitList ".") -}}
+            {{- if and (kindIs "map" $tmp) (gt (len .) 0) -}}
+              {{- $tmp = get $tmp . -}}
+            {{- else -}}
+              {{- $tmp = "" -}}
+              {{- break -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+        {{- $_ := set $data $key $tmp -}}
+      {{- end -}}
+
+    {{- else if kindIs "map" $val -}}
+      {{- template "process_deep_values" (dict "data" $val "ctx" $ctx) -}}
+
+    {{- else if kindIs "slice" $val -}}
+      {{- $newList := list -}}
+      
+      {{- range $item := $val -}}
+        {{- if kindIs "string" $item -}}
+          {{- if hasPrefix ".chezmoi" $item -}}
+            {{- $tmp := deepCopy $ctx -}}
+              {{- $keys := $item | trimPrefix ".chezmoi" -}}
+              {{- if gt (len $keys) 0 -}}
+                {{- range ($keys | trimPrefix "." | splitList ".") -}}
+                  {{- if and (kindIs "map" $tmp) (gt (len .) 0) -}}
+                    {{- $tmp = get $tmp . -}}
+                  {{- else -}}
+                    {{- $tmp = "" -}}
+                    {{- break -}}
+                  {{- end -}}
+                {{- end -}}
+              {{- end -}}
+            {{- $newList = append $newList $tmp -}}
+          {{- else -}}
+            {{- $newList = append $newList $item -}}
+          {{- end -}}
+        {{- else if kindIs "map" $item -}}
+          {{- template "process_deep_values" (dict "data" $item "ctx" $ctx) -}}
+          {{- $newList = append $newList $item -}}
+        {{- else -}}
+          {{- $newList = append $newList $item -}}
+        {{- end -}}
+      {{- end -}}
+
+      {{- $_ := set $data $key $newList -}}
+
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $args := dict "ctx" .chezmoi "data" (dict "args" .data.args) -}}
+{{- template "process_deep_values" $args -}}
+{{- $args = $args.data.args -}}
+
+{{- $result := "" -}}
+
+{{- if eq .data.function "lookup" -}}
+
+  {{- $key := index $args 0 -}}
+  {{- $lookup_list := index $args 1 -}}
+  {{- if mustHas $key $lookup_list -}}
+    {{- $result = true -}}
+  {{- else -}}
+    {{- $result = false -}}
+  {{- end -}}
+
+{{- else if eq .data.function "github_release" -}}
+
+  {{- $repo := index $args 0 -}}
+  {{- $fileglob := index $args 1 -}}
+  {{- $result = gitHubLatestReleaseAssetURL $repo $fileglob -}}
+
+{{- else -}}
+  {{- warnf "unknown preprocessor '%v'" .data.function -}}
+{{- end -}}
+
+{{- $result | toYaml -}}

@@ -1,8 +1,8 @@
-{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+{{- with ((includeTemplate "coalesce_data.yaml.tmpl" .) | fromYaml) -}}
 {{- $ := . -}}
 
-{{- if not .gui -}}
-  .ssh/config_hosts{{ "\n" }}
+{{- if not .data.metadata.gui -}}
+  .ssh/config_hosts {{- "\n" -}}
 {{- end -}}
 
 {{- end -}}

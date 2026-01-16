@@ -1,8 +1,8 @@
-{{- with (mustMerge ((includeTemplate "dynamic_data.yaml.tmpl" .) | fromYaml) .) -}}
+{{- with ((includeTemplate "coalesce_data.yaml.tmpl" .) | fromYaml) -}}
 {{- $ := . -}}
 
-{{- range .ssh_keys -}}
-  {{ . }} {{- "\n" }}
+{{- range .data.metadata.ssh.keys -}}
+  {{ . }} {{- "\n" -}}
 {{- end -}}
 
 {{- end -}}
