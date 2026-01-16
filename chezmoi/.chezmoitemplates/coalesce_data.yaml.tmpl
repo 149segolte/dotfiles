@@ -25,7 +25,7 @@
   {{- end -}}
 {{- end -}}
 
-{{- $result := dict "ctx" .chezmoi "data" (deepCopy .data) -}}
+{{- $result := dict "ctx" .chezmoi "data" (include "data.yaml" | fromYaml) -}}
 {{- template "process_deep_dict" $result -}}
 
 {{- $data := dict -}}
