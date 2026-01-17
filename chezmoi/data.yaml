@@ -38,6 +38,20 @@ linux:
     data:
       system_config: []
       externals:
+        .local/bin/mise:
+          type: 'file'
+          executable: true
+          url:
+            '#arm64':
+              function: 'github_release'
+              args:
+                - 'jdx/mise'
+                - 'mise-*-linux-arm64'
+            '#amd64':
+              function: 'github_release'
+              args:
+                - 'jdx/mise'
+                - 'mise-*-linux-x64'
         .local/bin/eza:
           type: 'archive-file'
           executable: true

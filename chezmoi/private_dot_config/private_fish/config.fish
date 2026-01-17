@@ -17,3 +17,5 @@ end
 # Zoxide
 zoxide init fish | source
 
+# Mise
+mise activate fish | source
