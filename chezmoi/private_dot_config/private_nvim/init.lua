@@ -244,6 +244,7 @@ require("lazy").setup({
           'javascript',
           'typescript',
           'tsx',
+          'yaml',
         }
         require'nvim-treesitter'.install(languages)
 
