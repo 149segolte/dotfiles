@@ -1,2 +1,10 @@
 [tools]
+"aqua:LuaLS/lua-language-server" = "latest"
+"github:JohnnyMorganz/StyLua" = "latest"
 node = "lts"
+"pipx:ruff" = "latest"
+"pipx:ty" = "latest"
+
+[settings]
+python.uv_venv_auto = true
+pipx.uvx = true
