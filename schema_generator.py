@@ -28,7 +28,7 @@ class FileContents(BaseModel):
     inline: str | None = None
 
     @model_validator(mode="after")
-    def check_mutually_exclusive_content(self) -> FileContents:
+    def check_mutually_exclusive_content(self) -> 'FileContents':
         set_values = self.model_dump(exclude_unset=True, exclude_none=True).values()
         if len(set_values) > 1:
             raise ValueError("Fields 'inline' and 'local' are mutually exclusive.")
