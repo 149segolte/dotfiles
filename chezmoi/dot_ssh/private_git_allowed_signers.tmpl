@@ -1,8 +1,0 @@
-{{- with ((includeTemplate "coalesce_data.yaml.tmpl" .) | fromYaml) -}}
-{{- $ := . -}}
-
-{{- range .data.metadata.ssh.keys -}}
-  {{ cat $.data.metadata.github.email "namespaces=\"git\"" . }} {{- "\n" -}}
-{{- end -}}
-
-{{- end -}}
