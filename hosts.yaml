@@ -4,17 +4,12 @@ ssh_keys: &ssh_keys
 hosts:
   novasking:
     ssh:
-      keys: !flatten
-        - *ssh_keys
+      keys: *ssh_keys
       output_pubs: true
-      host_declarations: true
   rpi:
     ssh:
-      keys: !flatten
-        - *ssh_keys
+      keys: *ssh_keys
   yigirus:
     ssh:
-      keys: !flatten
-        - *ssh_keys
+      keys: *ssh_keys
       output_pubs: true
-      host_declarations: true

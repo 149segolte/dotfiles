@@ -14,31 +14,51 @@ import subprocess
 import sys
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any, Literal, Union
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError, model_validator
+from pydantic import BaseModel, BeforeValidator, Field, FileUrl, ValidationError
 
 logging.basicConfig(format="HOOK(%(levelname)s): %(message)s")
 
+BASE_DIR = Path(__file__).parent.absolute()
 
-class FileContents(BaseModel):
-    inline: str | None = None
-    local: str | None = None
+StripedStr = Annotated[str, BeforeValidator(lambda x: str.strip(str(x)))]
+NonEmptyStr = Annotated[StripedStr, Field(min_length=1)]
 
-    @model_validator(mode="after")
-    def check_content(self) -> "FileContents":
-        has_inline = self.inline is not None
-        has_local = self.local is not None
-        if has_inline == has_local:
-            raise ValueError("Exactly one of 'inline' or 'local' must be set.")
-        return self
+
+class ResourceBase(BaseModel):
+    # compression: str = Field(default="none")
+    # verification: str = Field(default="")
+    pass
+
+
+class ResourceRemote(ResourceBase):
+    kind: Literal["remote"]
+    source: FileUrl
+    headers: list[dict[str, str]] = []  # TODO: better type def for this
+
+
+class ResourceInline(ResourceBase):
+    kind: Literal["inline"]
+    source: StripedStr
+
+
+class ResourceLocal(ResourceBase):
+    kind: Literal["local"]
+    source: Path
+
+
+Resource = Annotated[
+    Union[ResourceRemote, ResourceInline, ResourceLocal], Field(discriminator="kind")
+]
 
 
 class File(BaseModel):
-    path: str = Field(min_length=1)
-    contents: FileContents
-    mode: int = Field(default=0o644)
+    path: Path
+    contents: Resource
+    append: list[Resource] = []
+    mode: int = 0o644
 
 
 class ScriptType(StrEnum):
@@ -50,14 +70,14 @@ class ScriptType(StrEnum):
 
 
 class Script(BaseModel):
-    name: str = Field(min_length=1)
-    type: ScriptType = Field(default=ScriptType.RUN_ONCE)
-    content: str = Field(min_length=1)
+    name: NonEmptyStr
+    type: ScriptType = ScriptType.RUN_ONCE
+    content: Resource
 
 
 class Manifest(BaseModel):
-    files: list[File] = Field(default=[])
-    scripts: list[Script] = Field(default=[])
+    files: list[File] = []
+    scripts: list[Script] = []
 
 
 def load_chezmoi_data() -> dict[str, Any]:
@@ -163,8 +183,6 @@ def flatten_constructor(loader, node):
 
 
 def main() -> None:
-    root = Path(__file__).parent
-
     yaml.SafeLoader.add_constructor("!flatten", flatten_constructor)
 
     chezmoi_data = load_chezmoi_data()
@@ -173,7 +191,7 @@ def main() -> None:
         logging.critical("No hostname found in chezmoi data")
         sys.exit(1)
 
-    hosts = load_hosts(root / "hosts.yaml")
+    hosts = load_hosts(BASE_DIR / "hosts.yaml")
     host_config = hosts.get(hostname)
     if host_config is None:
         available = ", ".join(sorted(hosts.keys()))
@@ -198,7 +216,7 @@ def main() -> None:
             sys.exit(1)
 
         try:
-            executable = resolve_module_executable(root, name)
+            executable = resolve_module_executable(BASE_DIR, name)
             manifests[name] = run_module(
                 executable,
                 {
@@ -217,12 +235,14 @@ def main() -> None:
 
     for module_name, manifest in manifests.items():
         for file in manifest.files:
-            if file.path.startswith("/"):
+            path = file.path.expanduser().resolve()
+            if not path.is_relative_to(BASE_DIR):
                 warnings.append(
                     f"Skipping absolute path {file.path} (not supported yet)"
                 )
                 continue
-            file_sources.setdefault(file.path, []).append(module_name)
+            path = str(path.relative_to(BASE_DIR))
+            file_sources.setdefault(path, []).append(module_name)
 
         for script in manifest.scripts:
             script_names.append(script_filename(script))

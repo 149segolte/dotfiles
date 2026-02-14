@@ -9,34 +9,47 @@
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field
-from pydantic import ValidationError as PydanticValidationError
+from pydantic import BaseModel, BeforeValidator, Field, ValidationError, field_validator
 
 BASE_DIR = Path(__file__).parent.absolute()
 
+SSH_KEY_TYPES = {
+    "sk-ssh-ed25519@openssh.com": "ed25519_sk",
+    "sk-ecdsa-sha2-nistp256@openssh.com": "ecdsa_sk",
+    "ssh-rsa": "rsa",
+    "ssh-ed25519": "ed25519",
+    "ecdsa-sha2-nistp256": "ecdsa",
+}
+
+NonEmptyStr = Annotated[
+    str, BeforeValidator(lambda x: str.strip(str(x))), Field(min_length=1)
+]
+
 
 class InputData(BaseModel):
-    keys: list[str] = Field(default=[])
-    output_pubs: bool = Field(default=False)
-    host_declarations: bool = Field(default=False)
+    keys: list[NonEmptyStr] = []
+    output_pubs: bool = False
+
+    @field_validator("keys", mode="after")
+    @classmethod
+    def validate_keys(cls, keys: list[NonEmptyStr]) -> list[NonEmptyStr]:
+        for key in keys:
+            parts = key.split()
+            if len(parts) < 2:
+                raise ValueError(f"Invalid SSH key format: {key}")
+
+            key_type = SSH_KEY_TYPES.get(parts[0])
+            if key_type is None:
+                raise ValueError(f"Unsupported SSH key type: {parts[0]}")
+
+        return keys
 
 
 class ModuleInput(BaseModel):
     chezmoi: dict[str, Any]
     data: InputData
-
-
-def ssh_type_map(ssh_type: str) -> str | None:
-    type_map = {
-        "sk-ssh-ed25519@openssh.com": "ed25519_sk",
-        "sk-ecdsa-sha2-nistp256@openssh.com": "ecdsa_sk",
-        "ssh-rsa": "rsa",
-        "ssh-ed25519": "ed25519",
-        "ecdsa-sha2-nistp256": "ecdsa",
-    }
-    return type_map.get(ssh_type)
 
 
 def main() -> None:
@@ -45,39 +58,26 @@ def main() -> None:
         if not raw_input.strip():
             raise ValueError("No input provided on stdin")
 
-        payload = ModuleInput.model_validate_json(raw_input)
-        key_map: dict[str, list[str]] = {}
-
-        for key in payload.data.keys:
-            key = key.strip()
-            if not key:
-                raise ValueError("Empty SSH key provided")
-
-            parts = key.split()
-            if len(parts) < 2:
-                raise ValueError(f"Invalid SSH key format: {key}")
-
-            key_type = ssh_type_map(parts[0])
-            if key_type is None:
-                raise ValueError(f"Unsupported SSH key type: {key_type}")
-
-            key_map.setdefault(key_type, []).append(key)
-
-        keys = {
-            key_type if idx == 0 else f"{key_type}_alt{idx}": key
-            for key_type, keys in key_map.items()
-            for idx, key in enumerate(keys)
-        }
-
+        payload = ModuleInput.model_validate_json(raw_input, extra="forbid")
         files: list[dict[str, Any]] = []
 
         # Public keys
         if payload.data.output_pubs:
+            counter = {k: 0 for k in SSH_KEY_TYPES.values()}
+            keys = {}
+
+            for key in payload.data.keys:
+                parts = key.split()
+                key_type = SSH_KEY_TYPES.get(parts[0], "")
+                count = counter[key_type]
+                keys[key_type if count == 0 else f"{key_type}_alt{count}"] = key
+                counter[key_type] += 1
+
             files.extend(
                 [
                     {
                         "path": f".ssh/id_{name}.pub",
-                        "contents": {"inline": key + "\n"},
+                        "contents": {"kind": "inline", "source": key + "\n"},
                     }
                     for name, key in keys.items()
                 ]
@@ -87,7 +87,10 @@ def main() -> None:
         files.append(
             {
                 "path": ".ssh/authorized_keys",
-                "contents": {"inline": "\n".join(keys.values()) + "\n"},
+                "contents": {
+                    "kind": "inline",
+                    "source": "\n".join(payload.data.keys) + "\n",
+                },
             }
         )
 
@@ -95,23 +98,17 @@ def main() -> None:
         files.append(
             {
                 "path": ".ssh/config",
-                "contents": {"local": str((BASE_DIR / "config").absolute())},
+                "contents": {
+                    "kind": "local",
+                    "source": str((BASE_DIR / "config").absolute()),
+                },
             }
         )
-
-        # Config Hosts
-        if payload.data.host_declarations:
-            files.append(
-                {
-                    "path": ".ssh/config_hosts",
-                    "contents": {"local": str((BASE_DIR / "config_hosts").absolute())},
-                }
-            )
 
         output = {"files": files}
         print(json.dumps(output))
 
-    except (PydanticValidationError, ValueError) as e:
+    except (ValidationError, ValueError) as e:
         print(f"Input validation error: {e}", file=sys.stderr)
         exit(1)
 
