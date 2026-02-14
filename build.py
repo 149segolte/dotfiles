@@ -14,16 +14,65 @@ import subprocess
 import sys
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Any, Literal, Union
+from typing import Annotated, Any, Literal, Self, Union
 
 import yaml
-from pydantic import BaseModel, BeforeValidator, Field, FileUrl, ValidationError
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    BeforeValidator,
+    Field,
+    FileUrl,
+    ValidationError,
+    model_validator,
+)
 
-logging.basicConfig(format="HOOK(%(levelname)s): %(message)s")
+LOGLEVEL = os.environ.get("LOGLEVEL", "WARNING").upper()
+logging.basicConfig(format="HOOK(%(levelname)s): %(message)s", level=LOGLEVEL)
+
+
+# Utility functions
+def is_valid_mode(mode: int, fail: bool = True) -> int | None:
+    u = (mode >> 6) & 0o7
+    g = (mode >> 3) & 0o7
+    o = mode & 0o7
+
+    if not all(4 <= x <= 7 for x in (u, g, o)):
+        if fail:
+            raise ValueError(
+                f"Invalid mode: {oct(mode)}. Each of user/group/other bits must be between 4 and 7."
+            )
+        else:
+            return None
+
+    return mode
+
+
+def mode_set_bit(
+    mode: int, bit: Literal["r", "w", "x"], type: Literal["u", "g", "o"] | None
+) -> int:
+    bit_value = {"r": 4, "w": 2, "x": 1}[bit]
+
+    if type == "u":
+        mode |= bit_value << 6
+    elif type == "g":
+        mode |= bit_value << 3
+    elif type == "o":
+        mode |= bit_value
+    else:
+        # If no type is specified, set the bit for all types
+        mode |= (bit_value << 6) | (bit_value << 3) | bit_value
+
+    return mode
+
+
+def mode_merge(a: int, b: int, relax: bool = False) -> int:
+    return a | b if relax else a & b
 
 
 StripedStr = Annotated[str, BeforeValidator(lambda x: str.strip(str(x)))]
 NonEmptyStr = Annotated[StripedStr, Field(min_length=1)]
+ModeInt = Annotated[int, AfterValidator(is_valid_mode)]
 
 
 class ResourceBase(BaseModel):
@@ -55,9 +104,15 @@ Resource = Annotated[
 
 class File(BaseModel):
     path: Path
-    contents: Resource
+    contents: Resource | None = None
     append: list[Resource] = []
-    mode: int = 0o644
+    mode: ModeInt = Field(default=0o644)
+
+    @model_validator(mode="after")
+    def validate_contents(self) -> Self:
+        if self.contents is None and len(self.append) == 0:
+            raise ValueError("either contents or append must be specified")
+        return self
 
 
 class ScriptType(StrEnum):
@@ -229,49 +284,68 @@ def main() -> None:
             sys.exit(1)
 
     module_names = list(manifests.keys())
-    warnings: list[str] = []
-    file_sources: dict[str, list[str]] = {}
-    script_names: list[str] = []
+    file_sources: dict[str, File] = {}
+    script_sources: dict[str, Script] = {}
 
     for module_name, manifest in manifests.items():
         for file in manifest.files:
             path = file.path.expanduser().resolve()
             if not path.is_relative_to(cwd):
-                warnings.append(
+                logging.warning(
                     f"Skipping absolute path {file.path} (not supported yet)"
                 )
                 continue
-            path = str(path.relative_to(BASE_DIR))
-            file_sources.setdefault(path, []).append(module_name)
+            path = str(path.relative_to(cwd))
+
+            current = file_sources.get(path)
+            if current is not None:
+                if file.contents and current.contents:
+                    logging.critical(
+                        f"Duplicate file path '{path}' with contents from module '{module_name}'"
+                    )
+                    sys.exit(1)
+
+                if file.contents:
+                    current.contents = file.contents
+                current.append.extend(file.append)
+                current.mode = mode_merge(current.mode, file.mode)
+            else:
+                file_sources[path] = file
 
         for script in manifest.scripts:
-            script_names.append(script_filename(script))
-
-    for path, modules in file_sources.items():
-        if len(modules) > 1:
-            warnings.append(f"Conflict: {path} produced by {', '.join(modules)}")
+            name = script_filename(script)
+            if name in script_sources:
+                logging.critical(
+                    f"Duplicate script name '{name}' from module '{module_name}'"
+                )
+                sys.exit(1)
+            script_sources[name] = script
 
     file_paths = sorted(file_sources.keys())
+    script_names = sorted(script_sources.keys())
 
-    print(f"Host: {hostname}")
-    print("Modules: " + ", ".join(module_names) if module_names else "Modules: (none)")
-    print(f"Files: {len(file_paths)}")
-    print(f"Scripts: {len(script_names)}")
+    gen_details = [
+        "Build Summary",
+        f"  Host: {hostname}",
+        "  Modules: " + (", ".join(module_names) if module_names else "(none)"),
+        f"  Files: {len(file_paths)}",
+        f"  Scripts: {len(script_names)}",
+    ]
 
+    logging.info("\n".join(gen_details))
+
+    gen_files = ["Generation Summary"]
     if file_paths:
-        print("Files:")
+        gen_files.append("  Files:")
         for path in file_paths:
-            print(f"  - {path}")
+            gen_files.append(f"    - {path}")
 
     if script_names:
-        print("Scripts:")
+        gen_files.append("  Scripts:")
         for script_name in script_names:
-            print(f"  - {script_name}")
+            gen_files.append(f"    - {script_name}")
 
-    if warnings:
-        print("Warnings:")
-        for warning in warnings:
-            print(f"  - {warning}")
+    logging.debug("\n".join(gen_files))
 
 
 if __name__ == "__main__":
