@@ -197,6 +197,7 @@ def resolve_module_executable(root: Path, name: str) -> Path:
 
 def run_module(executable: Path, payload: dict[str, Any]) -> Manifest:
     module_name = executable.parent.name
+    result = None
     try:
         result = subprocess.run(
             [str(executable)],
@@ -204,7 +205,7 @@ def run_module(executable: Path, payload: dict[str, Any]) -> Manifest:
             capture_output=True,
             text=True,
             check=True,
-        ).stdout.strip()
+        )
     except subprocess.CalledProcessError as e:
         raise ValueError(
             f"Module '{module_name}' failed with exit code {e.returncode}: "
@@ -212,10 +213,19 @@ def run_module(executable: Path, payload: dict[str, Any]) -> Manifest:
         )
 
     if not result:
+        raise ValueError(f"Module '{module_name}' failed to run")
+
+    stdout = result.stdout.strip()
+    stderr = result.stderr.strip()
+
+    if stderr:
+        logging.warning(f"Module '{module_name}' produced stderr output:\n{stderr}")
+
+    if not stdout:
         raise ValueError(f"Module '{module_name}' produced no output")
 
     try:
-        return Manifest.model_validate_json(result)
+        return Manifest.model_validate_json(stdout, extra="forbid")
     except ValidationError as e:
         raise ValueError(f"Invalid manifest from module '{module_name}': {e}")
 
