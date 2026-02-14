@@ -21,7 +21,6 @@ from pydantic import BaseModel, BeforeValidator, Field, FileUrl, ValidationError
 
 logging.basicConfig(format="HOOK(%(levelname)s): %(message)s")
 
-BASE_DIR = Path(__file__).parent.absolute()
 
 StripedStr = Annotated[str, BeforeValidator(lambda x: str.strip(str(x)))]
 NonEmptyStr = Annotated[StripedStr, Field(min_length=1)]
@@ -183,6 +182,7 @@ def flatten_constructor(loader, node):
 
 
 def main() -> None:
+    cwd = Path.cwd()
     yaml.SafeLoader.add_constructor("!flatten", flatten_constructor)
 
     chezmoi_data = load_chezmoi_data()
@@ -191,7 +191,7 @@ def main() -> None:
         logging.critical("No hostname found in chezmoi data")
         sys.exit(1)
 
-    hosts = load_hosts(BASE_DIR / "hosts.yaml")
+    hosts = load_hosts(cwd / "hosts.yaml")
     host_config = hosts.get(hostname)
     if host_config is None:
         available = ", ".join(sorted(hosts.keys()))
@@ -216,7 +216,7 @@ def main() -> None:
             sys.exit(1)
 
         try:
-            executable = resolve_module_executable(BASE_DIR, name)
+            executable = resolve_module_executable(cwd, name)
             manifests[name] = run_module(
                 executable,
                 {
@@ -236,7 +236,7 @@ def main() -> None:
     for module_name, manifest in manifests.items():
         for file in manifest.files:
             path = file.path.expanduser().resolve()
-            if not path.is_relative_to(BASE_DIR):
+            if not path.is_relative_to(cwd):
                 warnings.append(
                     f"Skipping absolute path {file.path} (not supported yet)"
                 )
