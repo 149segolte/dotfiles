@@ -4,6 +4,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "email-validator>=2.3.0",
+#     "jinja2>=3.1.6",
 #     "pydantic>=2.12.5",
 # ]
 # ///
@@ -13,13 +14,17 @@ import sys
 from pathlib import Path
 from typing import Annotated, Any, Literal, Union
 
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pydantic import (
     AfterValidator,
     BaseModel,
     BeforeValidator,
     EmailStr,
     Field,
+    FieldSerializationInfo,
+    SerializerFunctionWrapHandler,
     ValidationError,
+    WrapSerializer,
 )
 
 BASE_DIR = Path(__file__).parent.absolute()
@@ -32,7 +37,23 @@ def relative_location(v: Path) -> Path:
     return v.relative_to(BASE_DIR)
 
 
-RelativePath = Annotated[Path, AfterValidator(relative_location)]
+def serialize_relative_path(
+    v: Any, handler: SerializerFunctionWrapHandler, info: FieldSerializationInfo
+) -> str:
+    v = handler(v)
+    if not isinstance(v, Path):
+        raise ValueError("value must be a Path")
+
+    if isinstance(info.context, dict):
+        base_dir = info.context.get("base_dir", Path("~"))
+        v = base_dir / v
+
+    return str(v)
+
+
+RelativePath = Annotated[
+    Path, AfterValidator(relative_location), WrapSerializer(serialize_relative_path)
+]
 
 NonEmptyStr = Annotated[
     str, BeforeValidator(lambda x: str.strip(str(x))), Field(min_length=1)
@@ -94,6 +115,12 @@ def main() -> None:
                 raise ValueError("No input provided on stdin")
 
             payload = ModuleInput.model_validate_json(raw_input, extra="forbid")
+            env = Environment(
+                loader=FileSystemLoader(BASE_DIR),
+                autoescape=select_autoescape(),
+                trim_blocks=True,
+                lstrip_blocks=True,
+            )
             chezmoi_dest_dir = (
                 Path(payload.chezmoi.get("chezmoi", {}).get("destDir", "~"))
                 .expanduser()
@@ -102,52 +129,17 @@ def main() -> None:
             files: list[dict[str, Any]] = []
 
             # Config file
-            data = [
-                "[init]",
-                "    defaultbranch = main",
-                "[user]",
-                f"    name = {payload.data.name}",
-                f"    email = {payload.data.email}",
-            ]
-
-            if payload.data.sign:
-                data.extend(
-                    [
-                        f"    signingkey = {chezmoi_dest_dir / payload.data.sign.key}",
-                        "[commit]",
-                        "    gpgsign = true",
-                        "[tag]",
-                        "    gpgsign = true",
-                        "[gpg]",
-                        f"    format = {payload.data.sign.format}",
-                    ]
-                )
-
-                if (
-                    payload.data.sign.format == "ssh"
-                    and payload.data.sign.allowed_signers
-                ):
-                    data.extend(
-                        [
-                            '[gpg "ssh"]',
-                            f"    allowedsignersfile = {chezmoi_dest_dir / payload.data.sign.allowed_signers.location}",
-                        ]
-                    )
-
-            if payload.data.global_exclude:
-                data.extend(
-                    [
-                        "[core]",
-                        f"    excludesfile = {chezmoi_dest_dir / payload.data.global_exclude.location}",
-                    ]
-                )
-
+            config_template = env.get_template("gitconfig.jinja")
             files.append(
                 {
                     "path": ".gitconfig",
                     "contents": {
                         "kind": "inline",
-                        "source": "\n".join([s for s in data if s]) + "\n",
+                        "source": config_template.render(
+                            payload.data.model_dump(
+                                context={"base_dir": chezmoi_dest_dir}
+                            )
+                        ),
                     },
                 }
             )

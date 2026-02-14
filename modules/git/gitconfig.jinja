@@ -1,0 +1,22 @@
+[init]
+    defaultbranch = main
+[user]
+    name = {{ name }}
+    email = {{ email }}
+{% if sign %}
+    signingkey = {{ sign.key }}
+[commit]
+    gpgsign = true
+[tag]
+    gpgsign = true
+[gpg]
+    format = {{ sign.format }}
+{% if sign.format == "ssh" and sign.allowed_signers %}
+[gpg "ssh"]
+    allowedsignersfile = {{ sign.allowed_signers.location }}
+{% endif %}
+{% endif %}
+{% if global_exclude %}
+[core]
+    excludesfile = {{ global_exclude.location }}
+{% endif %}
