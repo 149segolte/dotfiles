@@ -12,16 +12,30 @@ git_config: &git_config
       entries:
         - email: *git_email
           keys: *ssh_keys
+fish_config: &fish_config
+  config:
+    manual_config: |
+      tide configure
+  fisher:
+    plugins:
+      - "patrickf1/fzf.fish"
+      - "ilancosman/tide@v6"
 hosts:
   novasking:
     ssh:
       keys: *ssh_keys
       output_pubs: true
     git: *git_config
+    fish:
+      <<: *fish_config
+      switch_shell: "bash"
   rpi:
     ssh:
       keys: *ssh_keys
     git: *git_config
+    fish:
+      <<: *fish_config
+      switch_shell: "bash"
   yigirus:
     ssh:
       keys: *ssh_keys
@@ -32,3 +46,6 @@ hosts:
         location: ".gitignore_global"
         entries:
           - ".DS_Store"
+    fish:
+      <<: *fish_config
+      switch_shell: "zsh"
