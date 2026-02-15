@@ -374,6 +374,8 @@ def main() -> None:
                 for i, append in enumerate(file.append, start=1):
                     print(f"  Append chunk#{i} from {append.kind} resource:")
                     print(f"```\n{append.source}```")
+        else:
+            print("Skipping")
 
 
 if __name__ == "__main__":
