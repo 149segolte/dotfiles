@@ -358,6 +358,23 @@ def main() -> None:
 
     logging.debug("\n".join(gen_files))
 
+    if LOGLEVEL == "DEBUG":
+        lookup = input("File number to print: ").strip()
+        if lookup.isdigit():
+            index = int(lookup) - 1
+            if 0 <= index < len(file_paths):
+                path = file_paths[index]
+                file = file_sources[path]
+                print(f"Contents of {path} (mode {oct(file.mode)}):")
+                if file.contents:
+                    print(f"  [Contents from {file.contents.kind} resource]")
+                    print(f"```\n{file.contents.source}```")
+                else:
+                    print("  [No contents, only append resources]")
+                for i, append in enumerate(file.append, start=1):
+                    print(f"  Append chunk#{i} from {append.kind} resource:")
+                    print(f"```\n{append.source}```")
+
 
 if __name__ == "__main__":
     main()
