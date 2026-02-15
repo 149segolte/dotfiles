@@ -25,6 +25,7 @@ from pydantic import (
     SerializerFunctionWrapHandler,
     ValidationError,
     WrapSerializer,
+    field_validator,
 )
 
 BASE_DIR = Path(__file__).parent.absolute()
@@ -40,6 +41,7 @@ def relative_location(v: Path) -> Path:
 def serialize_relative_path(
     v: Any, handler: SerializerFunctionWrapHandler, info: FieldSerializationInfo
 ) -> str:
+    v = handler(v)
     if not isinstance(v, Path):
         raise ValueError("value must be a Path")
 
@@ -47,7 +49,7 @@ def serialize_relative_path(
         base_dir = info.context.get("base_dir", Path("~"))
         v = base_dir / v
 
-    return handler(v)
+    return str(v)
 
 
 RelativePath = Annotated[
@@ -61,7 +63,17 @@ NonEmptyStr = Annotated[
 
 class AllowedSigner(BaseModel):
     email: EmailStr
-    keys: set[NonEmptyStr] = set()
+    keys: list[NonEmptyStr] = []
+
+    @field_validator("keys", mode="after")
+    @classmethod
+    def validate_keys(cls, keys: list[NonEmptyStr]) -> list[NonEmptyStr]:
+        keys = sorted(set(keys))
+        for key in keys:
+            parts = key.split()
+            if len(parts) < 2:
+                raise ValueError(f"Invalid SSH key format: {key}")
+        return keys
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, AllowedSigner):
@@ -74,7 +86,12 @@ class AllowedSigner(BaseModel):
 
 class AllowedSignerOptions(BaseModel):
     location: RelativePath
-    entries: set[AllowedSigner] = set()
+    entries: list[AllowedSigner] = []
+
+    @field_validator("entries", mode="after")
+    @classmethod
+    def validate_entries(cls, entries: list[AllowedSigner]) -> list[AllowedSigner]:
+        return sorted(set(entries), key=lambda e: e.email)
 
 
 class SignOptionsBase(BaseModel):
@@ -99,7 +116,12 @@ SignOptions = Annotated[
 
 class GlobalExcludeOptions(BaseModel):
     location: RelativePath
-    entries: set[NonEmptyStr] = set()
+    entries: list[NonEmptyStr] = []
+
+    @field_validator("entries", mode="after")
+    @classmethod
+    def validate_entries(cls, entries: list[NonEmptyStr]) -> list[NonEmptyStr]:
+        return sorted(set(entries))
 
 
 class InputData(BaseModel):
@@ -122,6 +144,7 @@ def main() -> None:
                 raise ValueError("No input provided on stdin")
 
             payload = ModuleInput.model_validate_json(raw_input, extra="forbid")
+
             env = Environment(
                 loader=FileSystemLoader(BASE_DIR),
                 autoescape=select_autoescape(),
@@ -133,6 +156,7 @@ def main() -> None:
                 .expanduser()
                 .resolve()
             )
+
             files: list[dict[str, Any]] = []
 
             # Config file
@@ -144,7 +168,7 @@ def main() -> None:
                         "kind": "inline",
                         "source": config_template.render(
                             payload.data.model_dump(
-                                mode="json", context={"base_dir": chezmoi_dest_dir}
+                                context={"base_dir": chezmoi_dest_dir}
                             )
                         ),
                     },

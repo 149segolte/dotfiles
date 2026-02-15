@@ -39,12 +39,13 @@ NonEmptyStr = Annotated[
 
 
 class InputData(BaseModel):
-    keys: set[NonEmptyStr] = set()
+    keys: list[NonEmptyStr] = []
     output_pubs: bool = False
 
     @field_validator("keys", mode="after")
     @classmethod
-    def validate_keys(cls, keys: set[NonEmptyStr]) -> set[NonEmptyStr]:
+    def validate_keys(cls, keys: list[NonEmptyStr]) -> list[NonEmptyStr]:
+        keys = sorted(set(keys))
         for key in keys:
             parts = key.split()
             if len(parts) < 2:
@@ -74,13 +75,13 @@ def main() -> None:
         # Public keys
         if payload.data.output_pubs:
             counter = {k: 0 for k in SSH_KEY_TYPES.values()}
-            keys = {}
+            key_map = {}
 
             for key in payload.data.keys:
                 parts = key.split()
                 key_type = SSH_KEY_TYPES.get(parts[0], "")
                 count = counter[key_type]
-                keys[key_type if count == 0 else f"{key_type}_alt{count}"] = key
+                key_map[key_type if count == 0 else f"{key_type}_alt{count}"] = key
                 counter[key_type] += 1
 
             files.extend(
@@ -89,7 +90,7 @@ def main() -> None:
                         "path": f".ssh/id_{name}.pub",
                         "contents": {"kind": "inline", "source": key + "\n"},
                     }
-                    for name, key in keys.items()
+                    for name, key in key_map.items()
                 ]
             )
 
