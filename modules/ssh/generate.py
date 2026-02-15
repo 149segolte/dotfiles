@@ -29,12 +29,12 @@ NonEmptyStr = Annotated[
 
 
 class InputData(BaseModel):
-    keys: list[NonEmptyStr] = []
+    keys: set[NonEmptyStr] = set()
     output_pubs: bool = False
 
     @field_validator("keys", mode="after")
     @classmethod
-    def validate_keys(cls, keys: list[NonEmptyStr]) -> list[NonEmptyStr]:
+    def validate_keys(cls, keys: set[NonEmptyStr]) -> set[NonEmptyStr]:
         for key in keys:
             parts = key.split()
             if len(parts) < 2:

@@ -40,7 +40,6 @@ def relative_location(v: Path) -> Path:
 def serialize_relative_path(
     v: Any, handler: SerializerFunctionWrapHandler, info: FieldSerializationInfo
 ) -> str:
-    v = handler(v)
     if not isinstance(v, Path):
         raise ValueError("value must be a Path")
 
@@ -48,7 +47,7 @@ def serialize_relative_path(
         base_dir = info.context.get("base_dir", Path("~"))
         v = base_dir / v
 
-    return str(v)
+    return handler(v)
 
 
 RelativePath = Annotated[
@@ -62,12 +61,20 @@ NonEmptyStr = Annotated[
 
 class AllowedSigner(BaseModel):
     email: EmailStr
-    keys: list[NonEmptyStr] = []
+    keys: set[NonEmptyStr] = set()
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, AllowedSigner):
+            return NotImplemented
+        return self.email == other.email
+
+    def __hash__(self) -> int:
+        return self.email.__hash__()
 
 
 class AllowedSignerOptions(BaseModel):
     location: RelativePath
-    entries: list[AllowedSigner] = []
+    entries: set[AllowedSigner] = set()
 
 
 class SignOptionsBase(BaseModel):
@@ -92,7 +99,7 @@ SignOptions = Annotated[
 
 class GlobalExcludeOptions(BaseModel):
     location: RelativePath
-    entries: list[NonEmptyStr] = []
+    entries: set[NonEmptyStr] = set()
 
 
 class InputData(BaseModel):
@@ -137,7 +144,7 @@ def main() -> None:
                         "kind": "inline",
                         "source": config_template.render(
                             payload.data.model_dump(
-                                context={"base_dir": chezmoi_dest_dir}
+                                mode="json", context={"base_dir": chezmoi_dest_dir}
                             )
                         ),
                     },
