@@ -70,8 +70,9 @@ def mode_merge(a: int, b: int, relax: bool = False) -> int:
     return a | b if relax else a & b
 
 
-StripedStr = Annotated[str, BeforeValidator(lambda x: str.strip(str(x)))]
-NonEmptyStr = Annotated[StripedStr, Field(min_length=1)]
+NonEmptyStr = Annotated[
+    str, BeforeValidator(lambda x: str.strip(str(x))), Field(min_length=1)
+]
 ModeInt = Annotated[int, AfterValidator(is_valid_mode)]
 
 
@@ -89,7 +90,7 @@ class ResourceRemote(ResourceBase):
 
 class ResourceInline(ResourceBase):
     kind: Literal["inline"]
-    source: StripedStr
+    source: str
 
 
 class ResourceLocal(ResourceBase):
