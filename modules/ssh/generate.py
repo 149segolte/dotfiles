@@ -23,6 +23,16 @@ SSH_KEY_TYPES = {
     "ecdsa-sha2-nistp256": "ecdsa",
 }
 
+
+def resource_path(v: str) -> str:
+    res = ""
+    try:
+        res = (BASE_DIR / v).resolve(strict=True)
+    except OSError:
+        raise ValueError(f"Resource path {v} is not accessible")
+    return str(res)
+
+
 NonEmptyStr = Annotated[
     str, BeforeValidator(lambda x: str.strip(str(x))), Field(min_length=1)
 ]
@@ -100,7 +110,7 @@ def main() -> None:
                 "path": ".ssh/config",
                 "contents": {
                     "kind": "local",
-                    "source": str((BASE_DIR / "config").absolute()),
+                    "source": resource_path("config"),
                 },
             }
         )
