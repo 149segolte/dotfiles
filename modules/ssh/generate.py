@@ -71,6 +71,10 @@ def main() -> None:
 
         payload = ModuleInput.model_validate_json(raw_input, extra="forbid")
         files: list[dict[str, Any]] = []
+        dirs: list[dict[str, Any]] = []
+
+        # Directories
+        dirs.append({"path": ".ssh", "mode": 0o700})
 
         # Public keys
         if payload.data.output_pubs:
@@ -118,7 +122,7 @@ def main() -> None:
             }
         )
 
-        output = {"files": files}
+        output = {"files": files, "directories": dirs}
         print(json.dumps(output))
 
     except (ValidationError, ValueError) as e:

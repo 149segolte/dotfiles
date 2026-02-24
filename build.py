@@ -117,6 +117,11 @@ class File(BaseModel):
         return self
 
 
+class Directory(BaseModel):
+    path: Path
+    mode: ModeInt = Field(default=0o755)
+
+
 class ScriptType(StrEnum):
     RUN = "run"
     RUN_ONCE = "run_once"
@@ -133,6 +138,7 @@ class Script(BaseModel):
 
 class Manifest(BaseModel):
     files: list[File] = []
+    directories: list[Directory] = []
     scripts: list[Script] = []
 
 

@@ -78,6 +78,12 @@ def main() -> None:
 
         payload = ModuleInput.model_validate_json(raw_input, extra="forbid")
         files: list[dict[str, Any]] = []
+        dirs: list[dict[str, Any]] = []
+
+        # Directories
+        dirs.append({"path": ".config", "mode": 0o700})
+        dirs.append({"path": ".config/fish", "mode": 0o700})
+        dirs.append({"path": ".config/fish/functions", "mode": 0o755})
 
         # Switch shell configuration
         if payload.data.switch_shell:
@@ -173,7 +179,7 @@ def main() -> None:
             }
         )
 
-        output = {"files": files}
+        output = {"files": files, "directories": dirs}
         print(json.dumps(output))
 
     except (ValidationError, ValueError) as e:
