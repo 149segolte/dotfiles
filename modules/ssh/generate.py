@@ -98,6 +98,7 @@ def main() -> None:
         files.append(
             {
                 "path": ".ssh/authorized_keys",
+                "mode": 0o600,
                 "contents": {
                     "kind": "inline",
                     "source": "\n".join(payload.data.keys) + "\n",
@@ -109,6 +110,7 @@ def main() -> None:
         files.append(
             {
                 "path": ".ssh/config",
+                "mode": 0o600,
                 "contents": {
                     "kind": "local",
                     "source": resource_path("config"),

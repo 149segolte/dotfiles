@@ -53,7 +53,7 @@ def serialize_relative_path(
 
 
 RelativePath = Annotated[
-    Path, AfterValidator(relative_location), WrapSerializer(serialize_relative_path)
+    Path, AfterValidator(relative_location), WrapSerializer(serialize_relative_path)  # pyright:ignore[reportArgumentType]
 ]
 
 NonEmptyStr = Annotated[
@@ -176,7 +176,11 @@ def main() -> None:
             )
 
             # Allowed Signers File
-            if payload.data.sign.format == "ssh" and payload.data.sign.allowed_signers:
+            if (
+                payload.data.sign
+                and payload.data.sign.format == "ssh"
+                and payload.data.sign.allowed_signers
+            ):
                 files.append(
                     {
                         "path": str(payload.data.sign.allowed_signers.location),

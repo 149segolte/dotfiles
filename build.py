@@ -37,7 +37,8 @@ def is_valid_mode(mode: int, fail: bool = True) -> int | None:
     g = (mode >> 3) & 0o7
     o = mode & 0o7
 
-    if not all(4 <= x <= 7 for x in (u, g, o)):
+    valid = {0, 4, 5, 6, 7}
+    if not all(x in valid for x in (u, g, o)) or u == 0:
         if fail:
             raise ValueError(
                 f"Invalid mode: {oct(mode)}. Each of user/group/other bits must be between 4 and 7."
