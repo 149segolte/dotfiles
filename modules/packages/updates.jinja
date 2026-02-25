@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+{% if updates.check == "daily" %}
+# Update condition: {{ '{{' }} output "date" "+'%b %d %Y'" | trim {{ '}}' }}
+{% elif updates.check == "weekly" %}
+# Update condition: {{ '{{' }} output "date" "+'%U %Y'" | trim {{ '}}' }}
+{% endif %}
+
+{% if homebrew %}
+{% if updates.verify_installs %}
+mapfile -t brews_diff < <(comm -23 <(brew list -q --installed-on-request) <(tr ' ' '\n' <<<"{{ ' '.join(homebrew.brews) }}"))
+mapfile -t casks_diff < <(comm -23 <(brew list -q --casks) <(tr ' ' '\n' <<<"{{ ' '.join(homebrew.casks) }}"))
+
+{% raw %}
+if [ "${#brews_diff[@]}" -gt 0 ] || [ "${#casks_diff[@]}" -gt 0 ]; then
+  echo "Warning: The following Homebrew packages are installed but not specified in the configuration:"
+  if [ "${#brews_diff[@]}" -gt 0 ]; then
+    echo "Brews:"
+    echo "    ${brews_diff[@]}"
+  fi
+  if [ "${#casks_diff[@]}" -gt 0 ]; then
+    echo "Casks:"
+    echo "    ${casks_diff[@]}"
+  fi
+{% endraw %}
+{% if updates.verify_installs != "warn" %}
+  exit 1
+{% endif %}
+fi
+{% endif %}
+
+brew_updates=$(brew outdated -q | wc -l)
+
+if [ "$brew_updates" -gt 0 ]; then
+  brew update && brew upgrade
+fi
+{% endif %}
+
+{% if dnf %}
+{% if updates.verify_installs %}
+mapfile -t clis_diff < <(comm -23 <(sudo dnf repoquery --leaves --userinstalled) <(tr ' ' '\n' <<<"{{ ' '.join(dnf.clis) }}"))
+
+{% raw %}
+if [ "${#clis_diff[@]}" -gt 0 ]; then
+  echo "Warning: The following DNF packages are installed but not specified in the configuration:"
+  if [ "${#clis_diff[@]}" -gt 0 ]; then
+    echo "Packages:"
+    echo "    ${clis_diff[@]}"
+  fi
+{% endraw %}
+{% if updates.verify_installs != "warn" %}
+  exit 1
+{% endif %}
+fi
+{% endif %}
+
+dnf_updates=$(dnf check-update -q | wc -l)
+
+if [ "$dnf_updates" -gt 0 ]; then
+  sudo dnf upgrade --refresh -y
+fi
+{% endif %}

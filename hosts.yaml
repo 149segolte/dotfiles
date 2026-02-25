@@ -49,3 +49,36 @@ hosts:
     fish:
       <<: *fish_config
       switch_shell: "zsh"
+    packages:
+      updates:
+        check: "daily"
+        verify_installs: "warn"
+      homebrew:
+        brews:
+          - "aria2"
+          - "bat"
+          - "btop"
+          - "chezmoi"
+          - "dust"
+          - "eza"
+          - "fd"
+          - "fish"
+          - "fzf"
+          - "git"
+          - "neovim"
+          - "nushell"
+          - "openssh"
+          - "pinentry-mac"
+          - "ripgrep"
+          - "sevenzip"
+          - "tmux"
+          - "tree"
+          - "uv"
+          - "wget"
+          - "zoxide"
+        casks:
+          - "copyq"
+          - "discord"
+          - "ghostty"
+          - "tailscale-app"
+          - "zed"

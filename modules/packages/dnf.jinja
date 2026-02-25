@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+mapfile -d ' ' clis <<<"{{ ' '.join(dnf.clis) }}"
+
+declare -a include
+declare -a exclude
+
+for cli in "${clis[@]}"; do
+  if [[ "$cli" == -* ]]; then
+    exclude+=("${cli#-}")
+  else
+    include+=("$cli")
+  fi
+done
+
+{% raw %}
+if [ "${#exclude[@]}" -eq 0 ]; then
+  exclude=""
+else
+  exclude=$(tr ' ' ',' <<<"${exclude[@]}")
+  exclude="--exclude=${exclude}"
+fi
+
+if [ "${#include[@]}" -gt 0 ]; then
+  sudo dnf install --refresh "${include[@]}" ${exclude} -y
+fi
+{% endraw %}
