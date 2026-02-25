@@ -8,7 +8,6 @@
 #     "pydantic>=2.12.5",
 # ]
 # ///
-import contextlib
 import json
 import sys
 from pathlib import Path
@@ -32,6 +31,8 @@ BASE_DIR = Path(__file__).parent.absolute()
 
 
 def relative_location(v: Path) -> Path:
+    if not v.is_absolute():
+        v = BASE_DIR / v
     v = v.expanduser().resolve()
     if not v.is_relative_to(BASE_DIR):
         raise ValueError("value must be a relative path")
@@ -138,81 +139,77 @@ class ModuleInput(BaseModel):
 
 def main() -> None:
     try:
-        with contextlib.chdir(BASE_DIR):
-            raw_input = sys.stdin.read()
-            if not raw_input.strip():
-                raise ValueError("No input provided on stdin")
+        raw_input = sys.stdin.read()
+        if not raw_input.strip():
+            raise ValueError("No input provided on stdin")
 
-            payload = ModuleInput.model_validate_json(raw_input, extra="forbid")
+        payload = ModuleInput.model_validate_json(raw_input, extra="forbid")
 
-            env = Environment(
-                loader=FileSystemLoader(BASE_DIR),
-                autoescape=select_autoescape(),
-                trim_blocks=True,
-                lstrip_blocks=True,
-            )
-            chezmoi_dest_dir = (
-                Path(payload.chezmoi.get("chezmoi", {}).get("destDir", "~"))
-                .expanduser()
-                .resolve()
-            )
+        env = Environment(
+            loader=FileSystemLoader(BASE_DIR),
+            autoescape=select_autoescape(),
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
+        chezmoi_dest_dir = (
+            Path(payload.chezmoi.get("chezmoi", {}).get("destDir", "~"))
+            .expanduser()
+            .resolve()
+        )
 
-            files: list[dict[str, Any]] = []
+        files: list[dict[str, Any]] = []
 
-            # Config file
-            config_template = env.get_template("gitconfig.jinja")
+        # Config file
+        config_template = env.get_template("gitconfig.jinja")
+        files.append(
+            {
+                "path": ".gitconfig",
+                "contents": {
+                    "kind": "inline",
+                    "source": config_template.render(
+                        payload.data.model_dump(context={"base_dir": chezmoi_dest_dir})
+                    ),
+                },
+            }
+        )
+
+        # Allowed Signers File
+        if (
+            payload.data.sign
+            and payload.data.sign.format == "ssh"
+            and payload.data.sign.allowed_signers
+        ):
             files.append(
                 {
-                    "path": ".gitconfig",
+                    "path": str(payload.data.sign.allowed_signers.location),
                     "contents": {
                         "kind": "inline",
-                        "source": config_template.render(
-                            payload.data.model_dump(
-                                context={"base_dir": chezmoi_dest_dir}
-                            )
-                        ),
+                        "source": "\n".join(
+                            [
+                                f'{e.email} namespaces="git" {key}'
+                                for e in payload.data.sign.allowed_signers.entries
+                                for key in e.keys
+                            ]
+                        )
+                        + "\n",
                     },
                 }
             )
 
-            # Allowed Signers File
-            if (
-                payload.data.sign
-                and payload.data.sign.format == "ssh"
-                and payload.data.sign.allowed_signers
-            ):
-                files.append(
-                    {
-                        "path": str(payload.data.sign.allowed_signers.location),
-                        "contents": {
-                            "kind": "inline",
-                            "source": "\n".join(
-                                [
-                                    f'{e.email} namespaces="git" {key}'
-                                    for e in payload.data.sign.allowed_signers.entries
-                                    for key in e.keys
-                                ]
-                            )
-                            + "\n",
-                        },
-                    }
-                )
+        # Global Excludes File
+        if payload.data.global_exclude:
+            files.append(
+                {
+                    "path": str(payload.data.global_exclude.location),
+                    "contents": {
+                        "kind": "inline",
+                        "source": "\n".join(payload.data.global_exclude.entries) + "\n",
+                    },
+                }
+            )
 
-            # Global Excludes File
-            if payload.data.global_exclude:
-                files.append(
-                    {
-                        "path": str(payload.data.global_exclude.location),
-                        "contents": {
-                            "kind": "inline",
-                            "source": "\n".join(payload.data.global_exclude.entries)
-                            + "\n",
-                        },
-                    }
-                )
-
-            output = {"files": files}
-            print(json.dumps(output))
+        output = {"files": files}
+        print(json.dumps(output))
 
     except (ValidationError, ValueError) as e:
         print(f"Input validation error: {e}", file=sys.stderr)
