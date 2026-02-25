@@ -24,6 +24,7 @@ from pydantic import (
     Field,
     FileUrl,
     ValidationError,
+    field_validator,
     model_validator,
 )
 
@@ -122,18 +123,43 @@ class Directory(BaseModel):
     mode: ModeInt = Field(default=0o755)
 
 
-class ScriptType(StrEnum):
-    RUN = "run"
-    RUN_ONCE = "run_once"
-    RUN_ONCHANGE = "run_onchange"
-    RUN_BEFORE = "run_before"
-    RUN_AFTER = "run_after"
+class ScriptRunModifiers(StrEnum):
+    ONCE = "once"
+    ONCHANGE = "onchange"
+    BEFORE = "before"
+    AFTER = "after"
+
+    def _get_order(self):
+        return {name: idx for idx, name in enumerate(self.__class__)}
+
+    def __lt__(self, other):
+        ordering = self._get_order()
+        return ordering[self] < ordering[other]
+
+    def __gt__(self, other):
+        ordering = self._get_order()
+        return ordering[self] > ordering[other]
 
 
 class Script(BaseModel):
     name: NonEmptyStr
-    type: ScriptType = ScriptType.RUN_ONCE
-    content: Resource
+    run_modifiers: list[ScriptRunModifiers] = []
+    contents: Resource
+
+    @field_validator("run_modifiers", mode="after")
+    @classmethod
+    def validate_run_modifiers(
+        cls, run_modifiers: list[ScriptRunModifiers]
+    ) -> list[ScriptRunModifiers]:
+        run_modifiers = sorted(set(run_modifiers))
+
+        if all(mod in run_modifiers for mod in ("before", "after")):
+            raise ValueError("run_modifiers cannot contain both 'before' and 'after'")
+
+        if all(mod in run_modifiers for mod in ("once", "onchange")):
+            raise ValueError("run_modifiers cannot contain both 'once' and 'onchange'")
+
+        return run_modifiers
 
 
 class Manifest(BaseModel):
@@ -239,7 +265,7 @@ def run_module(executable: Path, payload: dict[str, Any]) -> Manifest:
 
 
 def script_filename(script: Script) -> str:
-    prefix = script.type[:-1] if script.type.endswith("_") else script.type
+    prefix = "run_" + "_".join(script.run_modifiers) if script.run_modifiers else ""
     return f"{prefix}_{script.name}.sh"
 
 
@@ -369,18 +395,26 @@ def main() -> None:
         lookup = input("File number to print: ").strip()
         if lookup.isdigit():
             index = int(lookup) - 1
-            if 0 <= index < len(file_paths):
-                path = file_paths[index]
-                file = file_sources[path]
-                print(f"Contents of {path} (mode {oct(file.mode)}):")
-                if file.contents:
-                    print(f"  [Contents from {file.contents.kind} resource]")
-                    print(f"```\n{file.contents.source}```")
+            if 0 <= index < (len(file_paths) + len(script_names)):
+                if index < len(file_paths):
+                    path = file_paths[index]
+                    file = file_sources[path]
+                    print(f"Contents of {path} (mode {oct(file.mode)}):")
+                    if file.contents:
+                        print(f"  [Contents from {file.contents.kind} resource]")
+                        print(f"```\n{file.contents.source}```")
+                    else:
+                        print("  [No contents, only append resources]")
+                    for i, append in enumerate(file.append, start=1):
+                        print(f"  Append chunk#{i} from {append.kind} resource:")
+                        print(f"```\n{append.source}```")
                 else:
-                    print("  [No contents, only append resources]")
-                for i, append in enumerate(file.append, start=1):
-                    print(f"  Append chunk#{i} from {append.kind} resource:")
-                    print(f"```\n{append.source}```")
+                    script_index = index - len(file_paths)
+                    script_name = script_names[script_index]
+                    script = script_sources[script_name]
+                    print(f"Contents of script {script_name}:")
+                    print(f"  [Contents from {script.contents.kind} resource]")
+                    print(f"```\n{script.contents.source}```")
         else:
             print("Skipping")
 
