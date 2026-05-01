@@ -1,0 +1,5 @@
+# Load tasks here
+---
+- ansible.builtin.import_tasks: packages.yaml
+- ansible.builtin.import_tasks: shell.yaml
+- ansible.builtin.import_tasks: system_config.yaml

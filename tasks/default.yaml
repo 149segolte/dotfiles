@@ -1,0 +1,5 @@
+# Load tasks here
+---
+- ansible.builtin.import_tasks: environment/default.yaml
+- ansible.builtin.import_tasks: ssh.yaml
+- ansible.builtin.import_tasks: git.yaml

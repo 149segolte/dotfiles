@@ -1,0 +1,14 @@
+---
+- name: Dotfiles ansible playbook
+  hosts: self
+  vars_files:
+    - "{{ playbook_dir }}/config.yaml"
+
+  pre_tasks:
+    - name: Check working connection.
+      ansible.builtin.ping: {}
+
+  tasks:
+    - name: Import all tasks
+      ansible.builtin.import_tasks:
+        file: "{{ playbook_dir }}/tasks/default.yaml"
