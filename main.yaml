@@ -1,6 +1,6 @@
 ---
 - name: Dotfiles ansible playbook
-  hosts: self
+  hosts: all
   vars_files:
     - "{{ playbook_dir }}/config.yaml"
 

@@ -1,6 +1,6 @@
-self:
+all:
   hosts:
-    target:
+    self:
       ansible_host: localhost
       ansible_connection: local
       ansible_user: one49segolte
