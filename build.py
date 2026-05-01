@@ -266,7 +266,7 @@ def run_module(executable: Path, payload: dict[str, Any]) -> Manifest:
 
 def script_filename(script: Script) -> str:
     prefix = "run_" + "_".join(script.run_modifiers) if script.run_modifiers else ""
-    return f"{prefix}_{script.name}.sh"
+    return f"{prefix}_{script.name}"
 
 
 def flatten_constructor(loader, node):
