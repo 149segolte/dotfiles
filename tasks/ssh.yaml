@@ -1,0 +1,68 @@
+# SSH configuration
+---
+- name: "Module(ssh): Evaluation Pass"
+  when: eval_pass | default(false)
+  block:
+    - name: "Module(ssh): required packages"
+      ansible.builtin.set_fact:
+        packages: "{{ packages | default([]) | union(input) }}"
+      vars:
+        input:
+          - name: openssh-clients
+            aliases: [openssh]
+          - "{{ {'name': 'pinentry-mac'} if ansible_facts['system'] == 'Darwin' else omit }}"
+
+    - name: "Module(ssh): Flag extra key handles"
+      block:
+        - name: "Module(ssh): Remote key handles"
+          ansible.builtin.find:
+            paths: "~/.ssh/"
+            patterns: "id_*.pub"
+            get_checksum: true
+          register: _tmp_remote_keys
+
+        - name: "Module(ssh): Local key handles"
+          ansible.builtin.find:
+            paths: "{{ playbook_dir }}/files/ssh/"
+            patterns: "id_*.pub"
+            get_checksum: true
+          register: _tmp_local_keys
+          delegate_to: localhost
+
+        - name: "Module(ssh): Check for extra key handles"
+          ansible.builtin.fail:
+            msg: "Extra key(s) handles not found locally: {{ _tmp_keys | join(', ') }}"
+          when: (_tmp_keys | length) > 0
+          vars:
+            _tmp_keys: "{{ _tmp_remote_keys.files | rejectattr('checksum', 'in', _tmp_local_keys.files | map(attribute='checksum') | list) | map(attribute='path') | map('basename') | list }}"
+
+- name: "Module(ssh): Execution Pass"
+  when: not (eval_pass | default(false))
+  block:
+    - name: "Module(ssh): Create SSH config"
+      ansible.builtin.copy:
+        dest: ~/.ssh/config
+        src: "{{ playbook_dir }}/files/ssh/config"
+        mode: "0600"
+
+    - name: "Module(ssh): Create SSH public key handles"
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "~/.ssh/"
+        mode: "0644"
+      with_fileglob:
+        - "{{ playbook_dir }}/files/ssh/id_*.pub"
+
+    - name: "Module(ssh): Set primary SSH key"
+      ansible.builtin.file:
+        src: "~/.ssh/{{ ssh.defaults.key }}"
+        dest: "~/.ssh/{{ ssh.defaults.target }}"
+        state: link
+      when: not ansible_check_mode
+
+    - name: "Module(ssh): Add to authorized_keys"
+      ansible.posix.authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ lookup('ansible.builtin.file', item) }}"
+      with_fileglob:
+        - "{{ playbook_dir }}/files/ssh/id_*.pub"
