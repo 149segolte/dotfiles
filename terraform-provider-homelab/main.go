@@ -1,5 +1,8 @@
-// Copyright IBM Corp. 2021, 2025
-// SPDX-License-Identifier: MPL-2.0
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
 
 package main
 
@@ -20,9 +23,6 @@ var (
 	// goreleaser can pass other information to the main package, such as the specific commit
 	// https://goreleaser.com/cookbooks/using-main.version/
 )
-
-// Generate copyright headers
-//go:generate go tool github.com/hashicorp/copywrite headers -d . --config ./.copywrite.hcl
 
 // Format Terraform code for use in documentation.
 // If you do not have Terraform installed, you can remove the formatting command, but it is suggested

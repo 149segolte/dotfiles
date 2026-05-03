@@ -30,9 +30,6 @@ linters:
       - builtin$
       - examples$
   settings:
-    misspell:
-      ignore-rules:
-        - "copywrite" # hashicorp/copywrite used for license headers
     depguard:
       rules:
         main:
