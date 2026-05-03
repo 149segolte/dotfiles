@@ -7,8 +7,23 @@
   pre_tasks:
     - name: Check working connection.
       ansible.builtin.ping: {}
+      tags: checks
 
   tasks:
-    - name: Import all tasks
+    - name: "First pass: Generate module data/configuration"
+      vars:
+        eval_pass: true
+      tags: eval
+      ansible.builtin.import_tasks:
+        file: "{{ playbook_dir }}/tasks/default.yaml"
+
+    - name: "Build system environment"
+      tags: environment
+      ansible.builtin.import_tasks:
+        file: "{{ playbook_dir }}/tasks/environment/default.yaml"
+
+    - name: "Second pass: Build modules"
+      vars:
+        eval_pass: false
       ansible.builtin.import_tasks:
         file: "{{ playbook_dir }}/tasks/default.yaml"

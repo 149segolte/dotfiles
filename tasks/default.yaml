@@ -1,5 +1,8 @@
-# Load tasks here
+# Load all module tasks here
 ---
-- ansible.builtin.import_tasks: environment/default.yaml
-- ansible.builtin.import_tasks: ssh.yaml
-- ansible.builtin.import_tasks: git.yaml
+- name: "Import SSH module tasks"
+  ansible.builtin.import_tasks: ssh.yaml
+  tags: modules,ssh
+- name: "Import Git module tasks"
+  ansible.builtin.import_tasks: git.yaml
+  tags: modules,git

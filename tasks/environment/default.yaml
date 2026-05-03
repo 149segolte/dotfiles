@@ -1,5 +1,11 @@
 # Load tasks here
 ---
-- ansible.builtin.import_tasks: packages.yaml
-- ansible.builtin.import_tasks: shell.yaml
-- ansible.builtin.import_tasks: system_config.yaml
+- name: "Import environment package management tasks"
+  ansible.builtin.import_tasks: packages.yaml
+  tags: packages
+- name: "Import environment shell tasks"
+  ansible.builtin.import_tasks: shell.yaml
+  tags: shell
+- name: "Import environment system configuration tasks"
+  ansible.builtin.import_tasks: system_config.yaml
+  tags: system_config
