@@ -1,3 +1,3 @@
-data "scaffolding_example" "example" {
+ephemeral "homelab_example" "example" {
   configurable_attribute = "some-value"
 }

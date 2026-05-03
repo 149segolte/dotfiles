@@ -30,7 +30,7 @@ var (
 //go:generate terraform fmt -recursive ./examples/
 
 // Generate documentation.
-//go:generate go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-dir .
+//go:generate go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-dir . --provider-name homelab --rendered-provider-name "Homelab"
 
 func main() {
 	var debug bool

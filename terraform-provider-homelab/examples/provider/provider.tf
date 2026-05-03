@@ -1,3 +1,3 @@
-provider "scaffolding" {
+provider "homelab" {
   # example configuration here
 }
