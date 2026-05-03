@@ -1,1 +1,27 @@
 # Configuration
+
+flags:
+  headless: true # Disables all graphics related tasks
+
+ssh:
+  defaults:
+    key: id_ed25519_sk_genid.pub
+    target: id_ed25519_sk.pub
+
+git:
+  name: Shreyansh Nayak
+  email: 37300847+149segolte@users.noreply.github.com
+  key: id_ed25519_sk.pub
+
+# package format:
+# - `name` (string) — Required. Package name to look up.
+# - `aliases` (sequence) — Optional. Alternative names to try if `name` is not found.
+# - `archive` (mapping) — Optional. Architecture-specific archive locations to use if no aliases are found.
+packages:
+  - name: uv
+    aliases: [uvx, test]
+    archive:
+      arm64: ""
+      x86_64: ""
+  - name: neovim
+  - name: fish
