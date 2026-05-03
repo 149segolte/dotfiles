@@ -1,0 +1,4 @@
+---
+- name: "Environment: debug system config"
+  ansible.builtin.debug:
+    msg: "--- System configuration"

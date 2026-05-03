@@ -1,0 +1,8 @@
+---
+- name: "Environment: debug packages"
+  ansible.builtin.debug:
+    msg: "--- System package management"
+
+- name: "Environment: debug packages"
+  ansible.builtin.debug:
+    var: packages

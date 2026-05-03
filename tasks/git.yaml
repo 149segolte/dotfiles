@@ -1,0 +1,4 @@
+---
+- name: "Module(git): debug"
+  ansible.builtin.debug:
+    msg: "--- Git configuration"
