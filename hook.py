@@ -6,34 +6,27 @@
 # ///
 import json
 import logging
-import subprocess
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
+# Set up logging
 logging.basicConfig(format="HOOK(%(levelname)s): %(message)s")
-
-
-def global_exceptions(type_, e, traceback):
-    if type_ is KeyboardInterrupt:
-        pass
-    elif type_ is subprocess.CalledProcessError:
-        logging.critical(f"command failed ({e.returncode}): {e.stderr.strip()}")
-    elif type_ is json.JSONDecodeError:
-        logging.critical(f"JSON decode failed: {e}")
-    else:
-        sys.__excepthook__(type_, e, traceback)
-
-
-sys.excepthook = global_exceptions
-
-run_cmd = subprocess.run(
-    ["chezmoi", "data", "--format=json"],
-    capture_output=True,
-    text=True,
-    check=True,
+# Disable keyboard interrupt
+sys.excepthook = lambda type_, e, traceback: (
+    sys.__excepthook__(type_, e, traceback) if type_ is not KeyboardInterrupt else None
 )
-chezmoi: dict[str, Any] = json.loads(run_cmd.stdout.strip()).get("chezmoi")
+
+# Get chezmoi environment variables
+if os.getenv("CHEZMOI", 0) != "1":
+    logging.critical("script not running under chezmoi")
+    sys.exit(1)
+chezmoi = {
+    k.removeprefix("CHEZMOI_"): v
+    for k, v in os.environ.items()
+    if k.startswith("CHEZMOI_")
+}
 
 ### BEGIN: Static Data
 
@@ -54,9 +47,9 @@ data: dict[str, Any] = {
 
 ### END: Static Data
 
-host = hosts.get(chezmoi["hostname"])
+host = hosts.get(chezmoi["HOSTNAME"])
 if host is None:
-    logging.critical(f"unknown hostname: {chezmoi['hostname']}")
+    logging.critical(f"unknown hostname: {chezmoi['HOSTNAME']}")
     sys.exit(1)
 
 ### BEGIN: Process Data
@@ -65,5 +58,5 @@ if host is None:
 
 ### END: Process Data
 
-TARGET_FILE = Path(chezmoi["sourceDir"]) / ".chezmoidata.json"
+TARGET_FILE = Path(chezmoi["SOURCE_DIR"]) / ".chezmoidata.json"
 TARGET_FILE.write_text(json.dumps(data, indent=2))
