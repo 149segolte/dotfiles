@@ -1,8 +1,3 @@
-{{- with ((includeTemplate "coalesce_data.yaml.tmpl" .) | fromYaml) -}}
-{{- $ := . -}}
-
-{{- range .data.metadata.ssh.keys -}}
-  {{ . }} {{- "\n" -}}
-{{- end -}}
-
-{{- end -}}
+{{- range .data.user.keys | keys | sortAlpha -}}
+{{ index $.data.user.keys . }}
+{{ end -}}

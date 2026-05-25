@@ -1,0 +1,3 @@
+{{- range .data.user.keys | keys | sortAlpha -}}
+{{ cat $.modules.git.user.email "namespaces=\"git\"" ( index $.data.user.keys . ) }}
+{{ end -}}

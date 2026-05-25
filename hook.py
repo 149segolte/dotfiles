@@ -12,7 +12,11 @@ from pathlib import Path
 from typing import Any
 
 # Set up logging
-logging.basicConfig(format="HOOK(%(levelname)s): %(message)s")
+DEBUG = False
+logging.basicConfig(
+    format="HOOK(%(levelname)s): %(message)s",
+    level=logging.DEBUG if DEBUG else logging.INFO,
+)
 # Disable keyboard interrupt
 sys.excepthook = lambda type_, e, traceback: (
     sys.__excepthook__(type_, e, traceback) if type_ is not KeyboardInterrupt else None
@@ -37,12 +41,27 @@ hosts: dict[str, Any] = {
 }
 
 data: dict[str, Any] = {
+    "data": {
+        "user": {
+            "name": chezmoi["USERNAME"],
+            "keys": {},  # Loads from disk later
+        },
+    },
     "environment": {
         "packages": {},
         "shell": {},
         "system": {},
     },
-    "modules": {},
+    "modules": {
+        "git": {
+            "user": {
+                "name": "149segolte",
+                "email": "37300847+149segolte@users.noreply.github.com",
+                "signingkey": "id_ed25519_sk_genid.pub",
+            },
+            "exclude": [],  # Array of git exclude patterns
+        },
+    },
 }
 
 ### END: Static Data
@@ -52,11 +71,49 @@ if host is None:
     logging.critical(f"unknown hostname: {chezmoi['HOSTNAME']}")
     sys.exit(1)
 
-### BEGIN: Process Data
+### BEGIN: Gather "data" field values
+
+# Get public key data for user
+ssh_dir = Path(chezmoi["SOURCE_DIR"]) / "dot_ssh"
+if not ssh_dir.exists():
+    logging.error(f"ssh directory not found: {ssh_dir}")
+    sys.exit(1)
+
+pub_keys = {}
+for key in ssh_dir.glob("*.pub"):
+    pub_keys[key.name] = key.read_text().strip()
+
+if len(pub_keys) == 0:
+    logging.error("no public keys found for user")
+    sys.exit(1)
+
+data["data"]["user"]["keys"] = pub_keys
+
+### END: Gather "data" field values
+
+### BEGIN: Gather "environment" field values
+
+### END: Gather "environment" field values
+
+### BEGIN: Gather "modules" field values
+
+# Ensure git signing key
+signing_key = data["modules"]["git"]["user"]["signingkey"]
+if signing_key is None:
+    logging.error("git user.signingkey not set")
+    sys.exit(1)
+
+if signing_key not in data["data"]["user"]["keys"]:
+    logging.error(f"git user.signingkey not found: {signing_key}")
+    # sys.exit(1)
+
+# Add extra git excludes
+if chezmoi["OS"] == "darwin":
+    data["modules"]["git"]["exclude"].append(".DS_Store")
 
 # ...
 
-### END: Process Data
+### END: Gather "modules" field values
 
 TARGET_FILE = Path(chezmoi["SOURCE_DIR"]) / ".chezmoidata.json"
 TARGET_FILE.write_text(json.dumps(data, indent=2))
