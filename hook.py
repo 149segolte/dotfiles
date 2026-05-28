@@ -118,8 +118,6 @@ for pkg in data["environment"]["packages"]:
 if len(shell_config) > 0:
     data["environment"]["shell"]["config"] += shell_config
 
-logging.info(f"shell config: {data['environment']['shell']['config']}")
-
 ### END: Gather "environment" field values
 
 ### BEGIN: Gather "modules" field values
