@@ -1,10 +1,14 @@
 [tools]
-"aqua:LuaLS/lua-language-server" = "latest"
-"github:JohnnyMorganz/StyLua" = "latest"
-node = "lts"
-"pipx:ruff" = "latest"
-"pipx:ty" = "latest"
+dotnet = { version = "10", install_env = { DOTNET_CLI_TELEMETRY_OPTOUT = "1" } }
+zig = "latest"
+zls = "latest"
+# "aqua:LuaLS/lua-language-server" = "latest"
+# "github:JohnnyMorganz/StyLua" = "latest"
+# node = "lts"
+# "pipx:ruff" = "latest"
+# "pipx:ty" = "latest"
 
 [settings]
 python.uv_venv_auto = true
 pipx.uvx = true
+dotnet.cli_telemetry_optout = true
