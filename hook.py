@@ -44,7 +44,7 @@ data: dict[str, Any] = {
     "data": {
         "user": {
             "name": chezmoi["USERNAME"],
-            "keys": {},  # Loads from disk later
+            "keys": {},  # DONT Modify, loaded from disk later
         },
     },
     "environment": {
@@ -62,8 +62,8 @@ data: dict[str, Any] = {
                 "cat": "bat --style=plain",
                 "grep": "rg",
             },
-            "config": "",
-            "interactive_config": "",
+            "config": "",  # Terminate with newline, more stuff is appended later
+            "interactive_config": "",  # Terminate with newline, more stuff is appended later
         },
         "system": {},
     },
