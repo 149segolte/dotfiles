@@ -9,6 +9,6 @@ zls = "latest"
 # "pipx:ty" = "latest"
 
 [settings]
-python.uv_venv_auto = true
+python.uv_venv_auto = "source"
 pipx.uvx = true
 dotnet.cli_telemetry_optout = true
