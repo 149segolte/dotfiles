@@ -9,10 +9,14 @@ import logging
 import os
 import sys
 from pathlib import Path
+from textwrap import dedent
 from typing import Any
 
-# Set up logging
 DEBUG = False
+FILE_ROOT = Path(__file__).parent
+FILES_DIR = FILE_ROOT / "files"
+
+# Set up logging
 logging.basicConfig(
     format="HOOK(%(levelname)s): %(message)s",
     level=logging.DEBUG if DEBUG else logging.INFO,
@@ -31,6 +35,13 @@ chezmoi = {
     for k, v in os.environ.items()
     if k.startswith("CHEZMOI_")
 }
+
+
+# Load helper for external files
+def load(path: str) -> str:
+    """Load the contents of a file (relative to the files directory) as a string."""
+    return (FILES_DIR / path).read_text()
+
 
 ### BEGIN: Static Data
 
@@ -52,7 +63,40 @@ data: dict[str, Any] = {
             {
                 "kind": "brew",
                 "name": "zoxide",
-                "shell": "# Zoxide\nzoxide init fish | source\n",
+                "shell": dedent("""\
+                    # Zoxide
+                    zoxide init fish | source
+                """),
+            },
+            {
+                "kind": "cask",
+                "name": "lmstudio",
+                "shell": dedent("""\
+                    # LM Studio CLI
+                    fish_add_path ~/.lmstudio/bin
+                """),
+            },
+            {
+                "kind": "custom",
+                "name": "ssh-askpass",
+                "shell": dedent("""\
+                    # SSH Askpass (requires pinentry-mac)
+                    set -Ux SSH_ASKPASS_REQUIRE force
+                    set -Ux SSH_ASKPASS "$HOME/.local/bin/ssh-askpass"
+                """),
+            },
+            {
+                "kind": "brew",
+                "name": "openssh",
+                "shell": load("ssh_agent.fish"),
+            },
+            {
+                "kind": "brew",
+                "name": "go",
+                "shell": dedent("""\
+                    # Go
+                    fish_add_path "~/go/bin"
+                """),
             },
         ],
         "shell": {
