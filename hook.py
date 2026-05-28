@@ -48,8 +48,23 @@ data: dict[str, Any] = {
         },
     },
     "environment": {
-        "packages": {},
-        "shell": {},
+        "packages": [
+            {
+                "kind": "brew",
+                "name": "zoxide",
+                "shell": "# Zoxide\nzoxide init fish | source\n",
+            },
+        ],
+        "shell": {
+            "aliases": {
+                "ls": "eza",
+                "ll": "eza -la",
+                "cat": "bat --style=plain",
+                "grep": "rg",
+            },
+            "config": "",
+            "interactive_config": "",
+        },
         "system": {},
     },
     "modules": {
@@ -92,6 +107,18 @@ data["data"]["user"]["keys"] = pub_keys
 ### END: Gather "data" field values
 
 ### BEGIN: Gather "environment" field values
+
+# Collect all packages shell config
+shell_config = ""
+for pkg in data["environment"]["packages"]:
+    sh = pkg.get("shell")
+    if sh is not None:
+        shell_config += sh + "\n"
+
+if len(shell_config) > 0:
+    data["environment"]["shell"]["config"] += shell_config
+
+logging.info(f"shell config: {data['environment']['shell']['config']}")
 
 ### END: Gather "environment" field values
 

@@ -1,0 +1,40 @@
+# Homebrew (topmost: allows checking for commands later)
+if command -q brew
+    brew shellenv | source
+end
+
+# Global defaults
+set -g fish_greeting
+if command -q nvim
+    set -g EDITOR nvim
+end
+
+if status is-interactive
+    # Aliases
+{{- range .environment.shell.aliases | keys | sortAlpha }}
+    {{- $val := index $.environment.shell.aliases . }}
+    {{- $cmd := index (splitList " " $val) 0 }}
+    if command -q {{ $cmd }}; alias {{ . }} {{ $val | quote }}; end
+{{- end }}
+
+    # Zed (internally alacritty) is weird with E3 capability, so use hard reset instead
+    if test $TERM_PROGRAM = "zed"
+        alias clear="printf '\033c'"
+    end
+
+{{- if .environment.shell.interactive_config }}
+    ## Interactive shell config
+
+{{- range .environment.shell.interactive_config | splitList "\n" }}
+    {{ . }}
+{{- end }}
+{{- end }}
+end
+
+{{ if .environment.shell.config -}}
+## Shell config
+
+{{- range .environment.shell.config | splitList "\n" }}
+{{ . }}
+{{- end }}
+{{- end }}
