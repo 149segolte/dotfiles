@@ -7,7 +7,6 @@
 # ]
 # ///
 import copy
-import json
 import logging
 import os
 import sys
@@ -153,5 +152,5 @@ if chezmoi["OS"] == "darwin":
 
 ### END: Gather "modules" field values
 
-TARGET_FILE = Path(chezmoi["SOURCE_DIR"]) / ".chezmoidata.json"
-TARGET_FILE.write_text(json.dumps(data, indent=2))
+TARGET_FILE = Path(chezmoi["SOURCE_DIR"]) / ".chezmoidata.yaml"
+TARGET_FILE.write_text(yaml.dump(data, indent=2))
