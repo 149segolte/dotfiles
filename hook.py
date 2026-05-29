@@ -6,6 +6,7 @@
 #     "pyyaml>=6.0.3",
 # ]
 # ///
+import copy
 import json
 import logging
 import os
@@ -64,22 +65,38 @@ def tag_load(loader, node):
 yaml.add_constructor("!eval", tag_eval, yaml.SafeLoader)
 yaml.add_constructor("!load", tag_load, yaml.SafeLoader)
 
-### BEGIN: Static Data
+### BEGIN: YAML data load
 
-hosts: dict[str, Any] = {
-    "novasking": {},
-    "yigirus": {},
-    "rpi": {},
-}
-
-data: dict[str, Any] = yaml.safe_load((FILE_ROOT / "hook_data.yaml").read_text())
-
-### END: Static Data
+raw_data: dict[str, Any] = (
+    yaml.safe_load((FILE_ROOT / "hook_data.yaml").read_text()) or {}
+)
+hosts: dict[str, Any] = (
+    yaml.safe_load((FILE_ROOT / "hook_hosts.yaml").read_text()) or {}
+)
 
 host = hosts.get(chezmoi["HOSTNAME"])
-if host is None:
+if not isinstance(host, dict):
     logging.critical(f"unknown hostname: {chezmoi['HOSTNAME']}")
     sys.exit(1)
+
+
+def merge_data(base: Any, overlay: Any, path: tuple[str, ...] = ()) -> Any:
+    """Deep-merge overlay into base with additive list semantics."""
+    if isinstance(base, dict) and isinstance(overlay, dict):
+        merged = copy.deepcopy(base)
+        for key, value in overlay.items():
+            merged[key] = merge_data(merged.get(key), value, path + (key,))
+        return merged
+
+    if isinstance(base, list) and isinstance(overlay, list):
+        return copy.deepcopy(base) + copy.deepcopy(overlay)
+
+    return copy.deepcopy(overlay)
+
+
+data: dict[str, Any] = merge_data(raw_data, host)
+
+### END: YAML data load
 
 ### BEGIN: Gather "data" field values
 
