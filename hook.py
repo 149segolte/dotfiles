@@ -2,15 +2,18 @@
 #
 # /// script
 # requires-python = ">=3.13"
-# dependencies = []
+# dependencies = [
+#     "pyyaml>=6.0.3",
+# ]
 # ///
 import json
 import logging
 import os
 import sys
 from pathlib import Path
-from textwrap import dedent
 from typing import Any
+
+import yaml
 
 DEBUG = False
 FILE_ROOT = Path(__file__).parent
@@ -43,6 +46,24 @@ def load(path: str) -> str:
     return (FILES_DIR / path).read_text()
 
 
+# YAML custom tags
+def tag_eval(loader, node):
+    value = loader.construct_scalar(node)
+    if isinstance(value, str):
+        return eval(value)
+    return None
+
+
+def tag_load(loader, node):
+    value = loader.construct_scalar(node)
+    if isinstance(value, str):
+        return load(value)
+    return None
+
+
+yaml.add_constructor("!eval", tag_eval, yaml.SafeLoader)
+yaml.add_constructor("!load", tag_load, yaml.SafeLoader)
+
 ### BEGIN: Static Data
 
 hosts: dict[str, Any] = {
@@ -51,77 +72,7 @@ hosts: dict[str, Any] = {
     "rpi": {},
 }
 
-data: dict[str, Any] = {
-    "data": {
-        "user": {
-            "name": chezmoi["USERNAME"],
-            "keys": {},  # DONT Modify, loaded from disk later
-        },
-    },
-    "environment": {
-        "packages": [
-            {
-                "kind": "brew",
-                "name": "zoxide",
-                "shell": dedent("""\
-                    # Zoxide
-                    zoxide init fish | source
-                """),
-            },
-            {
-                "kind": "cask",
-                "name": "lmstudio",
-                "shell": dedent("""\
-                    # LM Studio CLI
-                    fish_add_path ~/.lmstudio/bin
-                """),
-            },
-            {
-                "kind": "custom",
-                "name": "ssh-askpass",
-                "shell": dedent("""\
-                    # SSH Askpass (requires pinentry-mac)
-                    set -Ux SSH_ASKPASS_REQUIRE force
-                    set -Ux SSH_ASKPASS "$HOME/.local/bin/ssh-askpass"
-                """),
-            },
-            {
-                "kind": "brew",
-                "name": "openssh",
-                "shell": load("ssh_agent.fish"),
-            },
-            {
-                "kind": "brew",
-                "name": "go",
-                "shell": dedent("""\
-                    # Go
-                    fish_add_path "~/go/bin"
-                """),
-            },
-        ],
-        "shell": {
-            "aliases": {
-                "ls": "eza",
-                "ll": "eza -la",
-                "cat": "bat --style=plain",
-                "grep": "rg",
-            },
-            "config": "",  # Terminate with newline, more stuff is appended later
-            "interactive_config": "",  # Terminate with newline, more stuff is appended later
-        },
-        "system": {},
-    },
-    "modules": {
-        "git": {
-            "user": {
-                "name": "149segolte",
-                "email": "37300847+149segolte@users.noreply.github.com",
-                "signingkey": "id_ed25519_sk_genid.pub",
-            },
-            "exclude": [],  # Array of git exclude patterns
-        },
-    },
-}
+data: dict[str, Any] = yaml.safe_load((FILE_ROOT / "hook_data.yaml").read_text())
 
 ### END: Static Data
 

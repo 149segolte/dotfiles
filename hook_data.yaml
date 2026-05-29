@@ -1,0 +1,47 @@
+data:
+  user:
+    name: !eval "chezmoi['USERNAME']"
+    keys: {} # DO NOT EDIT, managed by hook.py
+environment:
+  packages:
+    - kind: brew
+      name: zoxide
+      shell: |
+        # Zoxide
+        zoxide init fish | source
+    - kind: cask
+      name: lmstudio
+      shell: |
+        # LM Studio CLI
+        fish_add_path ~/.lmstudio/bin
+    - kind: custom
+      name: ssh-askpass
+      shell: |
+        # SSH Askpass (requires pinentry-mac)
+        set -Ux SSH_ASKPASS_REQUIRE force
+        set -Ux SSH_ASKPASS "$HOME/.local/bin/ssh-askpass"
+      requires: ["pinentry-mac"]
+    - kind: brew
+      name: openssh
+      shell: !load "ssh_agent.fish"
+    - kind: brew
+      name: go
+      shell: |
+        # Go
+        fish_add_path "~/go/bin"
+  shell:
+    aliases:
+      ls: eza
+      ll: eza -la
+      cat: bat --style=plain
+      grep: rg
+    config: "" # END ON NEWLINE, modified by hook.py
+    interactive_config: "" # END ON NEWLINE, modified by hook.py
+  system: {}
+modules:
+  git:
+    user:
+      name: 149segolte
+      email: 37300847+149segolte@users.noreply.github.com
+      signingkey: id_ed25519_sk_genid.pub
+    exclude: []
