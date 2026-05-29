@@ -35,6 +35,10 @@ environment:
       ll: eza -la
       cat: bat --style=plain
       grep: rg
+    abbreviations:
+      gap: git add -p .
+      gcfeat: git commit -m "feat:"
+      gcfix: git commit -m "fix:"
     config: "" # END ON NEWLINE, modified by hook.py
     interactive_config: "" # END ON NEWLINE, modified by hook.py
   system: {}

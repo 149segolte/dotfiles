@@ -17,6 +17,12 @@ if status is-interactive
     if command -q {{ $cmd }}; alias {{ . }} {{ $val | quote }}; end
 {{- end }}
 
+    # Abbreviations
+{{- range .environment.shell.abbreviations | keys | sortAlpha }}
+    {{- $val := index $.environment.shell.abbreviations . }}
+    abbr -a -- {{ . }} {{ $val | quote }}
+{{- end }}
+
     # Zed (internally alacritty) is weird with E3 capability, so use hard reset instead
     if test $TERM_PROGRAM = "zed"
         alias clear="printf '\033c'"
