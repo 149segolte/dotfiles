@@ -158,6 +158,7 @@ for pkg in data["environment"]["packages"]:
     sh = pkg.get("shell")
     if sh is not None:
         shell_config += sh + "\n"
+        del pkg["shell"]
 
 if len(shell_config) > 0:
     data["environment"]["shell"]["config"] += shell_config
